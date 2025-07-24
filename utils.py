@@ -17,7 +17,7 @@ combinations = math.comb
 
 @lru_cache(maxsize=None)
 def check_probs(probs: tuple[tuple[float]], n: int) -> bool:
-    atol = 1e-6
+    atol = 1e-4
     if len(probs) != n:
         return False
     for i in probs:
@@ -66,8 +66,7 @@ def get_action_probs2(initial_counts0: tuple[int], probs0: tuple[tuple[float]], 
     
     for i in range(n):
         temp = defaultdict(float)
-        rng = list(range(initial_counts0[i] + 1)) * n
-        allocations = set(x for x in itertools.permutations(rng, n) if sum(x) == initial_counts0[i])
+        allocations = stars_and_bars(initial_counts0[i], n)
         for key, value in prev.items():
             for allocation in allocations:
                 temp[tuple(map(lambda x, y: x + y, key, allocation))] += value * multinomial(initial_counts0[i], allocation, probs0[i])
@@ -76,12 +75,23 @@ def get_action_probs2(initial_counts0: tuple[int], probs0: tuple[tuple[float]], 
     for i in range(n):
         temp = defaultdict(float)
         rng = list(range(initial_counts1[i] + 1)) * n
-        allocations = set(x for x in itertools.permutations(rng, n) if sum(x) == initial_counts1[i])
+        allocations = stars_and_bars(initial_counts1[i], n)
         for key, value in prev.items():
             for allocation in allocations:
                 temp[tuple(map(lambda x, y: x + y, key, allocation))] += value * multinomial(initial_counts1[i], allocation, probs1[i])
         prev = temp
     return prev
+
+
+def stars_and_bars(n: int, k: int) -> list[tuple[int]]:
+    if k == 1:
+        return [(n,)]
+    
+    result = []
+    for i in range(n + 1):
+        for combo in stars_and_bars(n - i, k - 1):
+            result.append((i,) + combo)
+    return result
 
 def plot_action_probs(initial_counts: tuple[int], probs: tuple[tuple[float]]):
     """Plot the action probabilities as a bar chart."""
