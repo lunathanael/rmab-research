@@ -1,65 +1,11 @@
 from collections import defaultdict
 import itertools
 
-NUMBER_OF_STATES = 2
+import utils as ut
 
-class State:
-    def __init__(self, s: int):
-        self.s = s
-    
-    def __str__(self):
-        return f"State(s={self.s})"
-    
-    def __hash__(self):
-        return hash(self.s)
-    
-    def __eq__(self, other):
-        return self.s == other.s
-    
-    
-
-class RMABState:
-    def __init__(self, t: int, s: tuple[float]):
-        self.t = t
-        self.s = s
-    
-    def __str__(self):
-        return f"RMABState(t={self.t}, s={self.s})"
-    
-class Action:
-    def __init__(self, a: int):
-        self.a = a
-    
-    def __str__(self):
-        return f"Action(a={self.a})"
-    
-    def __repr__(self):
-        return str(self)
-    
-    def __hash__(self):
-        return hash(self.a)
-    
-    def __eq__(self, other):
-        return self.a == other.a
-    
-class RMABAction:
-    def __init__(self, a: tuple[int]):
-        self.a = a
-    
-    def __str__(self):
-        return f"RMABAction(a={self.a})"
-    
-    def __repr__(self):
-        return str(self)
-    
-    def __hash__(self):
-        return hash(self.a)
-    
-    def __eq__(self, other):
-        return self.a == other.a
 
 class RMAB:
-    def __init__(self, H: int, N: int, alpha: float, initial_state: RMABState, rewards: dict[tuple[int, State, Action], float], transition_probabilities: dict[tuple[int, State, State, Action], float]):
+    def __init__(self, H: int, N: int, alpha: float, initial_state: tuple[int], rewards: dict[tuple[int, int, int], float], transition_probabilities: dict[tuple[int, int, int, int], float]):
         self.H = H
         self.N = N
         self.alpha = alpha
@@ -67,72 +13,93 @@ class RMAB:
         self.transition_probabilities = transition_probabilities
         self.initial_state = initial_state
 
-        self.allowed_actions = int(self.alpha * self.N)
-        self.rng = list(range(self.allowed_actions + 1)) * NUMBER_OF_STATES
-        self.allowed_actions = set(RMABAction(i) for i in itertools.permutations(self.rng, NUMBER_OF_STATES) if sum(i) == self.allowed_actions)
+        self.number_of_states = len(initial_state)
+        rng = list(range(self.N + 1)) * self.number_of_states
+        self.all_states = set(x for x in itertools.permutations(rng, self.number_of_states) if sum(x) == self.N)
 
-    def r(self, t: int, s: RMABState, a: RMABAction) -> float:
+        self.transition_array = [[[[[0 for l in range(self.number_of_states)] for k in range(self.number_of_states)] for j in range(2)] for i in range(self.number_of_states)] for _ in range(self.H)]
+        for t in range(self.H):
+            for s in range(self.number_of_states):
+                for i in range(self.number_of_states):
+                    for a in range(2):
+                        self.transition_array[t][a][s][i] = self.transition_probabilities[(t + 1, i, s, a)]
+
+
+    def r(self, t: int, s: tuple[int], a: tuple[int]) -> float:
         reward = 0
-        for i in range(NUMBER_OF_STATES):
-            reward += self.rewards[(t, State(i), Action(1))] * a.a[i]
-            reward += self.rewards[(t, State(i), Action(0))] * (s.s[i] - a.a[i])
+        for i in range(self.number_of_states):
+            reward += self.rewards[(t, i, 1)] * a[i]
+            reward += self.rewards[(t, i, 0)] * (s[i] - a[i])
         return reward
-
-    def act(self, t: int, s: RMABState, a: RMABAction) -> RMABState:
-        next_s = [0] * NUMBER_OF_STATES
-        for i in range(NUMBER_OF_STATES):
-            for j in range(NUMBER_OF_STATES):
-                next_s[i] += self.transition_probabilities[(t, State(i), State(j), Action(1))] * a.a[j]
-                next_s[i] += self.transition_probabilities[(t, State(i), State(j), Action(0))] * (s.s[j] - a.a[j])
-        return RMABState(t + 1, tuple(next_s))
-
-def find_optimal_policy(rmab: RMAB, s: RMABState) -> tuple[list[Action], float]:
-    if s.t > rmab.H:
-        return [], 0
     
-    best_action = None
-    best_value = float('-inf')
-    for a in rmab.allowed_actions:
-        next_s = rmab.act(s.t, s, a)
-        optimal_policy, optimal_value = find_optimal_policy(rmab, next_s)
-        value = rmab.r(s.t, s, a) + rmab.alpha * optimal_value
-        if value > best_value:
-            best_value = value
-            best_action = [a] + optimal_policy
-    return best_action, best_value
+    def generate_actions(self, s: tuple[int]) -> set[tuple[int]]:
+        actions = [(0,tuple())]
+        pulls = int(self.alpha * self.N)
+        for i in range(self.number_of_states - 1):
+            tmp = []
+            for j in range(min(s[i], pulls) + 1):
+                for k in actions:
+                    if k[0] + j <= pulls:
+                        tmp.append((k[0] + j, k[1] + (j,)))
+            actions = tmp
+        actions = set(x[1] + (pulls - x[0],) for x in actions if pulls - x[0] <= s[-1])
+        return actions
+
+#     def act(self, t: int, s: tuple[int], a: tuple[int]) -> tuple[int]:
+#         next_s = [0] * self.number_of_states
+#         for i in range(self.number_of_states):
+#             for j in range(self.number_of_states):
+#                 next_s[i] += self.transition_probabilities[(t, State(i), State(j), Action(1))] * a.a[j]
+#                 next_s[i] += self.transition_probabilities[(t, State(i), State(j), Action(0))] * (s.s[j] - a.a[j])
+#         return RMABState(t + 1, tuple(next_s))
+
+def find_optimal_policy(rmab: RMAB):
+    rewards = defaultdict(lambda: (tuple(), float('-inf')))
+    for t in range(rmab.H, 0, -1):
+        for s in rmab.all_states:
+            for a in rmab.generate_actions(s):
+                reward = rmab.r(t, s, a)
+                op_a = tuple(map(lambda x, y: x - y, s, a))
+                probs = ut.get_action_probs2(a, rmab.transition_array[t - 1][1], op_a, rmab.transition_array[t - 1][0])
+                for i in rmab.all_states:
+                    if t != rmab.H:
+                        reward += rewards[(t+1, i)][1] * probs[i]
+                if reward > rewards[(t, s)][1]:
+                    rewards[(t, s)] = (a, reward)
+    return rewards[(1, rmab.initial_state)][1], rewards
 
 transition_probabilities = {
-    (1, State(0), State(0), Action(1)): 0.2,
-    (1, State(1), State(0), Action(1)): 0.8,
-    (1, State(0), State(0), Action(0)): 0.9,
-    (1, State(1), State(0), Action(0)): 0.1,
-    (1, State(0), State(1), Action(1)): 0.7,
-    (1, State(1), State(1), Action(1)): 0.3,
-    (1, State(0), State(1), Action(0)): 0.25,
-    (1, State(1), State(1), Action(0)): 0.75,
+    (1, 0, 0, 1): 0.2,
+    (1, 1, 0, 1): 0.8,
+    (1, 0, 0, 0): 0.9,
+    (1, 1, 0, 0): 0.1,
+    (1, 0, 1, 1): 0.7,
+    (1, 1, 1, 1): 0.3,
+    (1, 0, 1, 0): 0.25,
+    (1, 1, 1, 0): 0.75,
 
     # Useless states for H=2
-    (2, State(0), State(0), Action(1)): 0.2,
-    (2, State(1), State(0), Action(1)): 0.8,
-    (2, State(0), State(0), Action(0)): 0.9,
-    (2, State(1), State(0), Action(0)): 0.1,
-    (2, State(0), State(1), Action(1)): 0.7,
-    (2, State(1), State(1), Action(1)): 0.3,
-    (2, State(0), State(1), Action(0)): 0.25,
-    (2, State(1), State(1), Action(0)): 0.75,
+    (2, 0, 0, 1): 0.2,
+    (2, 1, 0, 1): 0.8,
+    (2, 0, 0, 0): 0.9,
+    (2, 1, 0, 0): 0.1,
+    (2, 0, 1, 1): 0.7,
+    (2, 1, 1, 1): 0.3,
+    (2, 0, 1, 0): 0.25,
+    (2, 1, 1, 0): 0.75,
 }
 
 rewards = defaultdict(float)
-rewards[(1, State(1), Action(1))] = rewards[(2, State(1), Action(1))] = 1
+rewards[(1, 0, 1)] = rewards[(2, 0, 1)] = 1
 
-initial_state = RMABState(t=1, s=(1, 1))
+initial_state = (1,1)
 
 rmab = RMAB(H=2, N=2, alpha=0.5, initial_state=initial_state, rewards=rewards, transition_probabilities=transition_probabilities)
 
-optimal_policy, optimal_value = find_optimal_policy(rmab, initial_state)
+optimal_value, _ = find_optimal_policy(rmab)
+print(_)
 normalized_value = optimal_value / (rmab.N)
 print(optimal_value)
-print(optimal_policy)
 print(normalized_value)
 
 

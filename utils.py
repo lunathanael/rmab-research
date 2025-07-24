@@ -52,6 +52,33 @@ def get_action_probs(initial_counts: tuple[int], probs: tuple[tuple[float]]) -> 
         prev = temp
     return prev
 
+def get_action_probs2(initial_counts0: tuple[int], probs0: tuple[tuple[float]], initial_counts1: tuple[int], probs1: tuple[tuple[float]]) -> tuple[tuple[float]]:
+    n = len(initial_counts0)
+    assert n == len(initial_counts1)
+    assert check_probs(probs0, n)
+    assert check_probs(probs1, n)
+
+    prev = {tuple([0] * n): 1}
+    
+    for i in range(n):
+        temp = defaultdict(float)
+        rng = list(range(initial_counts0[i] + 1)) * n
+        allocations = set(x for x in itertools.permutations(rng, n) if sum(x) == initial_counts0[i])
+        for key, value in prev.items():
+            for allocation in allocations:
+                temp[tuple(map(lambda x, y: x + y, key, allocation))] += value * multinomial(initial_counts0[i], allocation, probs0[i])
+        prev = temp
+    
+    for i in range(n):
+        temp = defaultdict(float)
+        rng = list(range(initial_counts1[i] + 1)) * n
+        allocations = set(x for x in itertools.permutations(rng, n) if sum(x) == initial_counts1[i])
+        for key, value in prev.items():
+            for allocation in allocations:
+                temp[tuple(map(lambda x, y: x + y, key, allocation))] += value * multinomial(initial_counts1[i], allocation, probs1[i])
+        prev = temp
+    return prev
+
 def plot_action_probs(initial_counts: tuple[int], probs: tuple[tuple[float]]):
     """Plot the action probabilities as a bar chart."""
     result = get_action_probs(initial_counts, probs)
