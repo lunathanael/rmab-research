@@ -2,8 +2,9 @@ import math
 import itertools
 from collections import defaultdict
 import matplotlib.pyplot as plt
-import numpy as np
+from functools import lru_cache
 
+@lru_cache(maxsize=None)
 def combinations(n: int, r: int) -> int:
     ans = 1
     for i in range(n, n-r, -1):
@@ -14,6 +15,7 @@ def combinations(n: int, r: int) -> int:
 
 combinations = math.comb
 
+@lru_cache(maxsize=None)
 def check_probs(probs: tuple[tuple[float]], n: int) -> bool:
     atol = 1e-6
     if len(probs) != n:
@@ -25,6 +27,7 @@ def check_probs(probs: tuple[tuple[float]], n: int) -> bool:
             return False
     return True
 
+@lru_cache(maxsize=None)
 def multinomial(x: int, goal: tuple[int], probs: tuple[float]) -> float:
     n = len(goal)
     assert len(probs) == n
@@ -52,6 +55,7 @@ def get_action_probs(initial_counts: tuple[int], probs: tuple[tuple[float]]) -> 
         prev = temp
     return prev
 
+@lru_cache(maxsize=None)
 def get_action_probs2(initial_counts0: tuple[int], probs0: tuple[tuple[float]], initial_counts1: tuple[int], probs1: tuple[tuple[float]]) -> tuple[tuple[float]]:
     n = len(initial_counts0)
     assert n == len(initial_counts1)

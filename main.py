@@ -1,5 +1,6 @@
 from collections import defaultdict
 import itertools
+from functools import lru_cache
 
 import utils as ut
 
@@ -23,6 +24,7 @@ class RMAB:
                 for i in range(self.number_of_states):
                     for a in range(2):
                         self.transition_array[t][a][s][i] = self.transition_probabilities[(t + 1, i, s, a)]
+        self.transition_array = tuple(tuple(tuple(tuple(x) for x in y) for y in z) for z in self.transition_array)
 
 
     def r(self, t: int, s: tuple[int], a: tuple[int]) -> float:
@@ -32,6 +34,7 @@ class RMAB:
             reward += self.rewards[(t, i, 0)] * (s[i] - a[i])
         return reward
     
+    @lru_cache(maxsize=None)
     def generate_actions(self, s: tuple[int]) -> set[tuple[int]]:
         actions = [(0,tuple())]
         pulls = int(self.alpha * self.N)
@@ -92,9 +95,9 @@ transition_probabilities = {
 rewards = defaultdict(float)
 rewards[(1, 0, 1)] = rewards[(2, 0, 1)] = 1
 
-initial_state = (1,1)
+initial_state = (59,61)
 
-rmab = RMAB(H=2, N=2, alpha=0.5, initial_state=initial_state, rewards=rewards, transition_probabilities=transition_probabilities)
+rmab = RMAB(H=2, N=120, alpha=0.5, initial_state=initial_state, rewards=rewards, transition_probabilities=transition_probabilities)
 
 optimal_value, _ = find_optimal_policy(rmab)
 print(_)
