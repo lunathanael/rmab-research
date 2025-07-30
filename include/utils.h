@@ -106,14 +106,6 @@ consteval auto count_actions() {
     return count_actions_impl<states, alpha_n>(std::make_index_sequence<n>());
 }
 
-// template<auto states, int alpha_n, size_t max_actions, size_t... I>
-// consteval auto set_actions_impl(std::index_sequence<I...>) {
-//     static_assert(is_std_array<decltype(states)>::value);
-//     static_assert(is_std_array<typename decltype(states)::value_type>::value);
-//     constexpr size_t S = std::tuple_size_v<typename decltype(states)::value_type>;
-//     return std::array<std::array<std::array<int, S>, max_actions>, sizeof...(I)>{find_actions<states[I], alpha_n, max_actions>()...};
-// }
-
 template<auto states, int alpha_n, size_t max_actions, size_t... I>
 consteval auto set_actions_impl(std::index_sequence<I...>) {
     static_assert(is_std_array<decltype(states)>::value);

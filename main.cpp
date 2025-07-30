@@ -16,8 +16,8 @@ public:
 
 
 int main() {
-    constexpr auto states = generate_states<5, 4>();
-    constexpr auto actions = generate_actions<states, 2>();
+    constexpr auto states = generate_states<10, 4>();
+    constexpr auto actions = generate_actions<states, 5>();
     std::cout << actions.size() << std::endl;
     for(const auto & action : actions) {
         print_states(action);
