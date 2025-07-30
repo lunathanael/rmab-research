@@ -16,7 +16,7 @@ public:
   unordered_map<array<int, S>, int, hash_array<S>> state_to_idx;
   array<array<vector<double>, states.size()>, H> r;
   array<
-      array<array<array<double, states.size()>, states.size()>, states.size()>,
+      array<vector<array<double, states.size()>>, states.size()>,
       H>
       p;
 
@@ -44,6 +44,7 @@ public:
   void precompute_transition_probabilities() {
     for (int t = 0; t < H; ++t) {
       for (int i = 0; i < states.size(); ++i) {
+        p[t][i].resize(actions[i].size());
         for (int j = 0; j < actions[i].size(); ++j) {
           auto op_a = subtract_array(states[i], actions[i][j]);
           auto probs =
@@ -92,21 +93,63 @@ public:
   }
 };
 
-constexpr int H = 1;
-constexpr int N = 10;
-constexpr int S = 4;
+constexpr int H = 2;
+constexpr int N = 120;
+constexpr int S = 2;  // 2 arms based on initial_state = (60, 60)
 constexpr double alpha = 0.5;
 
-constexpr array<array<array<double, 2>, S>, H> rewards = {};
+// rewards[h][state][action] - only state 0, action 1 gives reward 1
+constexpr array<array<array<double, 2>, 2>, H> rewards = {{
+    // H = 1 (index 0)
+    {{
+        {0.0, 1.0}, // state 0: action 0 = 0, action 1 = 1
+        {0.0, 0.0}  // state 1: action 0 = 0, action 1 = 0
+    }},
+    // H = 2 (index 1) 
+    {{
+        {0.0, 1.0}, // state 0: action 0 = 0, action 1 = 1
+        {0.0, 0.0}  // state 1: action 0 = 0, action 1 = 0
+    }}
+}};
 
-constexpr array<array<array<array<double, S>, S>, 2>, H>
-    transition_probabilities = {};
+// transition_probabilities[h][action][current_state][next_state]
+constexpr array<array<array<array<double, 2>, 2>, 2>, H> transition_probabilities = {{
+    // H = 1 (index 0)
+    {{
+        // action = 0
+        {{
+            {0.9, 0.1}, // current_state 0: P(0->0)=0.9, P(0->1)=0.2  
+            {0.25, 0.75} // current_state 1: P(1->0)=0.25, P(1->1)=0.7
+        }},
+        // action = 1  
+        {{
+            {0.2, 0.8}, // current_state 0: P(0->0)=0.2, P(0->1)=0.8
+            {0.7, 0.3} // current_state 1: P(1->0)=0.75, P(1->1)=0.25
+        }}
+    }},
+    // H = 2 (index 1) - same probabilities
+    {{
+        // action = 0
+        {{
+            {0.9, 0.2}, // current_state 0: P(0->0)=0.9, P(0->1)=0.2  
+            {0.25, 0.7} // current_state 1: P(1->0)=0.25, P(1->1)=0.7
+        }},
+        // action = 1  
+        {{
+            {0.1, 0.8}, // current_state 0: P(0->0)=0.1, P(0->1)=0.8
+            {0.75, 0.3} // current_state 1: P(1->0)=0.75, P(1->1)=0.3
+        }}
+    }}
+}};
 
-constexpr array<int, S> initial_state = {5, 5};
+constexpr array<int, S> initial_state = {60, 60};
 
 int main() {
   RMAB<H, N, S, alpha, initial_state, rewards, transition_probabilities> rmab;
   auto actions = generate_actions(rmab.states, rmab.alpha_n);
-  cout << rmab.find_policy() << endl;
+  cout << actions.size() << endl;
+  double res = rmab.find_policy();
+  cout << res << endl;
+  cout << res / N << endl;
   return 0;
 }

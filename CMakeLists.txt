@@ -11,3 +11,5 @@ add_executable(RMAB main.cpp)
 target_include_directories(RMAB PRIVATE include)
 
 target_compile_options(RMAB PRIVATE -Ofast -march=native -ffast-math -flto -DNDEBUG -fno-exceptions -fconstexpr-cache-depth=16 -fconstexpr-ops-limit=1000000000)
+target_link_options(RMAB PRIVATE -Ofast -march=native -ffast-math -flto -DNDEBUG -fno-exceptions -fconstexpr-cache-depth=16 -fconstexpr-ops-limit=1000000000)
+target_compile_options(RMAB PRIVATE -fsanitize=address)
