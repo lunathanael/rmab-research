@@ -15,7 +15,10 @@ public:
   std::array<std::vector<std::array<int, S>>, states.size()> actions;
   unordered_map<array<int, S>, int, hash_array<S>> state_to_idx;
   array<array<vector<double>, states.size()>, H> r;
-  array<array<array<array<double, states.size()>, states.size()>, states.size()>, H> p;
+  array<
+      array<array<array<double, states.size()>, states.size()>, states.size()>,
+      H>
+      p;
 
   static constexpr auto calculate_rewards(int t, array<int, S> s,
                                           array<int, S> a) {
@@ -44,8 +47,8 @@ public:
         for (int j = 0; j < actions[i].size(); ++j) {
           auto op_a = subtract_array(states[i], actions[i][j]);
           auto probs =
-              get_action_probs(actions[i][j], transition_probabilities[t][1], op_a,
-                               transition_probabilities[t][0]);
+              get_action_probs(actions[i][j], transition_probabilities[t][1],
+                               op_a, transition_probabilities[t][0]);
           for (int k = 0; k < states.size(); ++k) {
             p[t][i][j][k] = probs[states[k]];
           }
@@ -65,7 +68,27 @@ public:
 
   double find_policy() {
     array<array<double, states.size()>, H> dp;
-    memset(dp.data(), -DBL_MAX, sizeof(dp));
+    for(int i = 0; i < H; ++i) {
+      for(int j = 0; j < states.size(); ++j) {
+        dp[i][j] = -DBL_MAX;
+      }
+    }
+    for (int t = H - 1; t >= 0; --t) {
+      for (int i = 0; i < states.size(); ++i) {
+        for (int j = 0; j < actions[i].size(); ++j) {
+          double reward = r[t][i][j];
+          for (int k = 0; k < states.size(); ++k) {
+            if (t != H - 1) {
+              reward += p[t][i][j][k] * dp[t + 1][k];
+            }
+            if (reward > dp[t][i]) {
+              dp[t][i] = reward;
+            }
+          }
+        }
+      }
+    }
+    return dp[0][state_to_idx[initial_state]];
   }
 };
 
@@ -84,15 +107,6 @@ constexpr array<int, S> initial_state = {5, 5};
 int main() {
   RMAB<H, N, S, alpha, initial_state, rewards, transition_probabilities> rmab;
   auto actions = generate_actions(rmab.states, rmab.alpha_n);
-  // compile_time::print_states(rmab.states);
-
-  // constexpr auto states = generate_states<10, 4>();
-  // constexpr auto actions = generate_actions<states, 5>();
-  // std::cout << actions.size() << std::endl;
-  int sum = 0;
-  for (const auto &action : rmab.actions) {
-    sum += action.size();
-  }
-  cout << sum << endl;
+  cout << rmab.find_policy() << endl;
   return 0;
 }
