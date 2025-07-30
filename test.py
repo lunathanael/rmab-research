@@ -29,4 +29,4 @@ for state in all_states:
 
 print(actions)
 print(len(actions))
-print(max(len(x) for x in actions))
+print(sum(len(x) for x in actions))

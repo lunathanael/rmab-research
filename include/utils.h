@@ -9,6 +9,7 @@ struct is_std_array : std::false_type {};
 template<typename T, std::size_t N>
 struct is_std_array<std::array<T, N>> : std::true_type {};
 
+namespace compile_time {
 consteval int combinations(int n, int r) {
     if (r > n || r < 0 || n < 0) return 0;
     if (r == 0 || r == n) return 1;
@@ -144,4 +145,54 @@ void print_states(const std::array<std::array<T, S>, n>& states) {
         }
         std::cout << "]" << std::endl;
     }
+}
+}
+
+template<size_t S, size_t actions_size = 0>
+constexpr auto find_actions(const std::array<int, S> &state, int alpha_n) {
+    std::vector<std::pair<int, std::vector<int>>> actions = {{0, {}}}, tmp;
+    for (int i = 0; i < S - 1; ++i) {
+        tmp.clear();
+        for (int j = 0; j < std::min(state[i], alpha_n) + 1; ++j) {
+            for (const auto & action : actions) {
+                if (action.first + j <= alpha_n) {
+                    auto new_action = action.second;
+                    new_action.push_back(j);
+                    tmp.push_back({action.first + j, new_action});
+                }
+            }
+        }
+        actions = std::move(tmp);
+    }
+    tmp.clear();
+    for(const auto & action : actions) {
+        int j = alpha_n - action.first;
+        if (j <= state.back()) {
+            auto new_action = action.second;
+            new_action.push_back(j);
+            tmp.push_back({action.first + j, new_action});
+        }
+    }
+    actions = std::move(tmp);
+    if constexpr (actions_size == 0) {
+        return actions.size();
+    } else {
+        std::array<std::array<int, S>, actions_size> res;
+        for (int i = 0; i < actions.size(); ++i) {
+            for(int j = 0; j < S; ++j) {
+                res[i][j] = actions[i].second[j];
+            }
+        }
+        return res;
+    }
+}
+
+template<size_t S, size_t n>
+constexpr auto generate_actions(const std::array<std::array<int, S>, n> &states, int alpha_n) {
+    std::array<int, n> action_counts;
+    for (size_t i = 0; i < n; ++i) {
+        action_counts[i] = find_actions(states[i], alpha_n);
+    }
+    static_assert(std::is_constant_evaluated(), "Runtime context");
+    return std::accumulate(action_counts.begin(), action_counts.end(), 0);
 }
