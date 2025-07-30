@@ -36,3 +36,5 @@ ENV/
 
 # Project specific
 complexity_analysis.png
+
+build/
