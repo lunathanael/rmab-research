@@ -209,7 +209,7 @@ template <size_t N> struct hash_array {
 
   
 template<size_t S>
-void fill_states_helper(auto& states, int& idx, std::array<int, S>& current, int pos, int remaining) {
+constexpr void fill_states_helper(auto& states, int& idx, std::array<int, S>& current, int pos, int remaining) {
     if (pos == S - 1) {
         current[pos] = remaining;
         states[idx++] = current;
@@ -251,6 +251,16 @@ auto generate_states(std::size_t N) {
     return states;
 }
 
+template<size_t S, size_t N>
+auto generate_all_states() {
+    std::array<std::vector<std::array<int, S>>, N> states;
+    for(int i = 0; i < N; ++i) {
+        states[i] = generate_states<S>(i);
+    }
+    return states;
+}
+
+
 template<size_t S>
 constexpr auto add_array(const std::array<int, S> &a, const std::array<int, S> &b) {
     std::array<int, S> res;
@@ -287,14 +297,16 @@ constexpr double multinomial(int x, const std::array<int, S> &goal, const std::a
     return res;
 }
 
-template<size_t S>
+template<size_t N, size_t S>
 auto get_action_probs(const std::array<int, S> &count_0, const std::array<std::array<double, S>, S> &probs_0, const std::array<int, S> &count_1, const std::array<std::array<double, S>, S> &probs_1) {
+    static const auto states = generate_all_states<S, N>();
+    
     std::unordered_map<std::array<int, S>, double, hash_array<S>> dp, tmp;
     dp[{}] = 1;
 
     for(int i = 0; i < S; ++i) {
         tmp.clear();
-        auto allocations = generate_states<S>(count_0[i]);
+        const auto &allocations = states[count_0[i]];
         for(const auto & allocation : allocations) {
             double prob = multinomial(count_0[i], allocation, probs_0[i]);
             for(const auto & [key, value] : dp) {
@@ -307,7 +319,7 @@ auto get_action_probs(const std::array<int, S> &count_0, const std::array<std::a
 
     for(int i = 0; i < S; ++i) {
         tmp.clear();
-        auto allocations = generate_states<S>(count_1[i]);
+        const auto &allocations = states[count_1[i]];
         for(const auto & allocation : allocations) {
             double prob = multinomial(count_1[i], allocation, probs_1[i]);
             for(const auto & [key, value] : dp) {
