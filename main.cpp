@@ -12,6 +12,11 @@ public:
     static constexpr const int alpha_n = alpha * N;
     static_assert(alpha_n / alpha == N, "alpha * N must be an integer");
     static constexpr const auto states = compile_time::generate_states<N, S>();
+    std::array<std::vector<std::array<int, S>>, states.size()> actions;
+
+    RMAB() {
+        actions = generate_actions(states, alpha_n);
+    }
     // static constexpr const auto actions = generate_actions1(states, alpha_n);
 };
 
@@ -30,14 +35,16 @@ constexpr array<int, S> initial_state = {5, 5};
 
 int main() {
     RMAB<H, N, S, alpha, initial_state, rewards, transition_probabilities> rmab;
-    constexpr auto actions = generate_actions(rmab.states, rmab.alpha_n);
-    std::cout << actions << std::endl;
+    auto actions = generate_actions(rmab.states, rmab.alpha_n);
+    // compile_time::print_states(rmab.states);
 
     // constexpr auto states = generate_states<10, 4>();
     // constexpr auto actions = generate_actions<states, 5>();
     // std::cout << actions.size() << std::endl;
-    // for(const auto & action : actions) {
-    //     print_states(action);
-    // }
+    int sum = 0;
+    for(const auto & action : rmab.actions) {
+        sum += action.size();
+    }
+    cout << sum << endl;
     return 0;
 }
