@@ -16,6 +16,7 @@ public:
   unordered_map<array<int, S>, int, hash_array<S>> state_to_idx;
   array<array<vector<double>, states.size()>, H> r;
   array<array<vector<array<double, states.size()>>, states.size()>, H> p;
+  array<array<pair<double, array<int, S> *>, states.size()>, H> dp;
 
   static constexpr auto calculate_rewards(int t, array<int, S> s,
                                           array<int, S> a) {
@@ -39,7 +40,7 @@ public:
   }
 
   void precompute_transition_probabilities() {
-    for (int t = 0; t < H; ++t) {
+    for (int t = 0; t < 1; ++t) {
       for (int i = 0; i < states.size(); ++i) {
         p[t][i].resize(actions[i].size());
         for (int j = 0; j < actions[i].size(); ++j) {
@@ -51,6 +52,11 @@ public:
             p[t][i][j][k] = probs[states[k]];
           }
         }
+      }
+    }
+    for (int t = 1; t < H; ++t) {
+      for (int i = 0; i < states.size(); ++i) {
+        p[t][i] = p[t - 1][i];
       }
     }
   }
@@ -68,11 +74,36 @@ public:
     cout << "Done initializing" << endl;
   }
 
+  static auto print_array(array<int, S> *arr) {
+    if (arr == nullptr) {
+      cout << "(nullptr)" << endl;
+      return;
+    }
+    cout << "(";
+    for (int i = 0; i < S; ++i) {
+      cout << (*arr)[i];
+      if (i != S - 1) {
+        cout << ", ";
+      }
+    }
+    cout << ")";
+  }
+
+  void print_policy() {
+    for (int t = 0; t < H; ++t) {
+      cout << "t = " << t << endl;
+      for (int i = 0; i < states.size(); ++i) {
+        cout << "{" << dp[t][i].first << ", ";
+        print_array(dp[t][i].second);
+        cout << "} \n";
+      }
+    }
+  }
+
   double find_policy() {
-    array<array<double, states.size()>, H> dp;
     for (int i = 0; i < H; ++i) {
       for (int j = 0; j < states.size(); ++j) {
-        dp[i][j] = -DBL_MAX;
+        dp[i][j] = {-DBL_MAX, nullptr};
       }
     }
     for (int t = H - 1; t >= 0; --t) {
@@ -81,16 +112,17 @@ public:
           double reward = r[t][i][j];
           for (int k = 0; k < states.size(); ++k) {
             if (t != H - 1) {
-              reward += p[t][i][j][k] * dp[t + 1][k];
+              reward += p[t][i][j][k] * dp[t + 1][k].first;
             }
-            if (reward > dp[t][i]) {
-              dp[t][i] = reward;
+            if (reward > dp[t][i].first) {
+              dp[t][i] = {reward, &actions[i][j]};
             }
           }
         }
       }
     }
-    return dp[0][state_to_idx[initial_state]];
+    print_policy();
+    return dp[0][state_to_idx[initial_state]].first;
   }
 };
 
@@ -172,12 +204,10 @@ constexpr array<array<array<array<double, 4>, 4>, 2>, H>
                {0.00000000, 0.16178167, 0.00000000, 0.83821833}  // from state 3
            }}}}}};
 
-constexpr array<int, S> initial_state = {25, 0, 25, 25};
+constexpr array<int, S> initial_state = {25, 0, 25, 0};
 
 int main() {
   RMAB<H, N, S, alpha, initial_state, rewards, transition_probabilities> rmab;
-  auto actions = generate_actions(rmab.states, rmab.alpha_n);
-  cout << actions.size() << endl;
   double res = rmab.find_policy();
   cout << res << endl;
   cout << res / N << endl;
