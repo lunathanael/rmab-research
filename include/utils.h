@@ -2,6 +2,8 @@
 #include <algorithm>
 #include <iostream>
 #include <vector>
+#include <cmath>
+#include <unordered_map>
 
 template<typename T>
 struct is_std_array : std::false_type {};
@@ -188,4 +190,132 @@ constexpr auto generate_actions(const std::array<std::array<int, S>, n> &states,
         action_counts[i] = find_actions(states[i], alpha_n);
     }
     return action_counts;
+}
+
+
+
+template <size_t N> struct hash_array {
+    template <typename T, size_t S>
+    size_t operator()(const std::array<T, S> &arr) const {
+      size_t res = 0;
+      size_t scalar = 1;
+      for (int i = 0; i < S; ++i) {
+        res += arr[i] * scalar;
+        scalar *= N;
+      }
+      return res;
+    }
+  };
+
+  
+template<size_t S>
+void fill_states_helper(auto& states, int& idx, std::array<int, S>& current, int pos, int remaining) {
+    if (pos == S - 1) {
+        current[pos] = remaining;
+        states[idx++] = current;
+        return;
+    }
+    
+    for (int i = 0; i <= remaining; ++i) {
+        current[pos] = i;
+        fill_states_helper<S>(states, idx, current, pos + 1, remaining - i);
+    }
+}
+
+
+constexpr int combinations(int n, int r) {
+    if (r > n || r < 0 || n < 0) return 0;
+    if (r == 0 || r == n) return 1;
+    
+    long long result = 1;
+    r = std::min(r, n - r);
+    
+    for (int i = 0; i < r; ++i) {
+        result = result * (n - i) / (i + 1);
+    }
+    return static_cast<int>(result);
+}
+
+template<size_t S>
+auto generate_states(std::size_t N) {
+    size_t n = combinations(N + S - 1, S - 1);
+    using state_t = std::array<int, S>;
+    using state_array_t = std::vector<state_t>;
+    
+    state_array_t states{n};
+    int idx = 0;
+    state_t current{};
+    
+    fill_states_helper<S>(states, idx, current, 0, N);
+    
+    return states;
+}
+
+template<size_t S>
+constexpr auto add_array(const std::array<int, S> &a, const std::array<int, S> &b) {
+    std::array<int, S> res;
+    for(int i = 0; i < S; ++i) {
+        res[i] = a[i] + b[i];
+    }
+    return res;
+}
+
+template<size_t S>
+constexpr auto subtract_array(const std::array<int, S> &a, const std::array<int, S> &b) {
+    std::array<int, S> res;
+    for(int i = 0; i < S; ++i) {
+        res[i] = a[i] - b[i];
+    }
+    return res;
+}
+
+
+template<size_t S>
+constexpr double multinomial(int x, const std::array<int, S> &goal, const std::array<double, S> &probs) {
+    double res = 1;
+    for(int i = 1; i <= x; ++i) {
+        res *= i;
+        for(int j = 0; j < S; ++j) {
+            if(goal[j] >= i) {
+                res /= i;
+            }
+        }
+    }
+    for(int i = 0; i < S; ++i) {
+        res *= std::pow(probs[i], goal[i]);
+    }
+    return res;
+}
+
+template<size_t S>
+auto get_action_probs(const std::array<int, S> &count_0, const std::array<std::array<double, S>, S> &probs_0, const std::array<int, S> &count_1, const std::array<std::array<double, S>, S> &probs_1) {
+    std::unordered_map<std::array<int, S>, double, hash_array<S>> dp, tmp;
+    dp[{}] = 1;
+
+    for(int i = 0; i < S; ++i) {
+        tmp.clear();
+        auto allocations = generate_states<S>(count_0[i]);
+        for(const auto & allocation : allocations) {
+            double prob = multinomial(count_0[i], allocation, probs_0[i]);
+            for(const auto & [key, value] : dp) {
+                auto new_key = add_array(key, allocation);
+                tmp[new_key] += value * prob;
+            }
+        }
+        dp = std::move(tmp);
+    }
+
+    for(int i = 0; i < S; ++i) {
+        tmp.clear();
+        auto allocations = generate_states<S>(count_1[i]);
+        for(const auto & allocation : allocations) {
+            double prob = multinomial(count_1[i], allocation, probs_1[i]);
+            for(const auto & [key, value] : dp) {
+                auto new_key = add_array(key, allocation);
+                tmp[new_key] += value * prob;
+            }
+        }
+        dp = std::move(tmp);
+    }
+    return dp;
 }
