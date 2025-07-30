@@ -3,6 +3,12 @@
 #include <iostream>
 #include <vector>
 
+template<typename T>
+struct is_std_array : std::false_type {};
+
+template<typename T, std::size_t N>
+struct is_std_array<std::array<T, N>> : std::true_type {};
+
 consteval int combinations(int n, int r) {
     if (r > n || r < 0 || n < 0) return 0;
     if (r == 0 || r == n) return 1;
@@ -45,22 +51,32 @@ consteval auto generate_states() {
     return states;
 }
 
-template<size_t S, int alpha_n, size_t actions_size = 0>
-consteval auto find_actions(const std::array<int, S> & state) {
+template<size_t S, std::array<int, S> state, int alpha_n, size_t actions_size = 0>
+consteval auto find_actions() {
     std::vector<std::pair<int, std::vector<int>>> actions = {{0, {}}}, tmp;
-    // for (int i = 0; i < alpha_n; ++i) {
-    //     tmp.clear();
-    //     for (int j = 0; j < std::min(state[i], alpha_n) + 1; ++j) {
-    //         for (const auto & action : actions) {
-    //             if (action.first + j <= alpha_n) {
-    //                 auto new_action = action.second;
-    //                 new_action.push_back(j);
-    //                 tmp.push_back({action.first + j, new_action});
-    //             }
-    //         }
-    //         actions = std::move(tmp);
-    //     }
-    // }
+    for (int i = 0; i < S - 1; ++i) {
+        tmp.clear();
+        for (int j = 0; j < std::min(state[i], alpha_n) + 1; ++j) {
+            for (const auto & action : actions) {
+                if (action.first + j <= alpha_n) {
+                    auto new_action = action.second;
+                    new_action.push_back(j);
+                    tmp.push_back({action.first + j, new_action});
+                }
+            }
+        }
+        actions = std::move(tmp);
+    }
+    tmp.clear();
+    for(const auto & action : actions) {
+        int j = alpha_n - action.first;
+        if (j <= state.back()) {
+            auto new_action = action.second;
+            new_action.push_back(j);
+            tmp.push_back({action.first + j, new_action});
+        }
+    }
+    actions = std::move(tmp);
     if constexpr (actions_size == 0) {
         return actions.size();
     } else {
@@ -74,10 +90,13 @@ consteval auto find_actions(const std::array<int, S> & state) {
     }
 }
 
-template<int alpha_n, size_t S>
-consteval auto generate_actions(const std::array<int, S> & state) {
-    constexpr size_t actions_size = find_actions<S, alpha_n>(state);
-    return find_actions<S, alpha_n, actions_size>(state);
+template<auto state, int alpha_n>
+consteval auto generate_actions() {
+    static_assert(is_std_array<decltype(state)>::value);
+    constexpr size_t S = state.size();
+    static_assert(std::is_same_v<decltype(state), decltype(std::array<int, S>())>);
+    constexpr size_t actions_size = find_actions<S, state, alpha_n>();
+    return find_actions<S, state, alpha_n, actions_size>();
 }
 
 // template<size_t S, size_t n>
