@@ -15,10 +15,7 @@ public:
   std::array<std::vector<std::array<int, S>>, states.size()> actions;
   unordered_map<array<int, S>, int, hash_array<S>> state_to_idx;
   array<array<vector<double>, states.size()>, H> r;
-  array<
-      array<vector<array<double, states.size()>>, states.size()>,
-      H>
-      p;
+  array<array<vector<array<double, states.size()>>, states.size()>, H> p;
 
   static constexpr auto calculate_rewards(int t, array<int, S> s,
                                           array<int, S> a) {
@@ -59,18 +56,22 @@ public:
   }
 
   RMAB() {
+    cout << "Precomputing actions" << endl;
     actions = generate_actions(states, alpha_n);
     for (int i = 0; i < states.size(); ++i) {
       state_to_idx[states[i]] = i;
     }
+    cout << "Precomputing rewards" << endl;
     precompute_rewards();
+    cout << "Precomputing transition probabilities" << endl;
     precompute_transition_probabilities();
+    cout << "Done initializing" << endl;
   }
 
   double find_policy() {
     array<array<double, states.size()>, H> dp;
-    for(int i = 0; i < H; ++i) {
-      for(int j = 0; j < states.size(); ++j) {
+    for (int i = 0; i < H; ++i) {
+      for (int j = 0; j < states.size(); ++j) {
         dp[i][j] = -DBL_MAX;
       }
     }
@@ -93,56 +94,85 @@ public:
   }
 };
 
-constexpr int H = 2;
-constexpr int N = 120;
-constexpr int S = 2;  // 2 arms based on initial_state = (60, 60)
+constexpr int H = 3;
+constexpr int N = 50;
+constexpr int S = 4; // 4 states based on the matrices
 constexpr double alpha = 0.5;
 
-// rewards[h][state][action] - only state 0, action 1 gives reward 1
-constexpr array<array<array<double, 2>, 2>, H> rewards = {{
-    // H = 1 (index 0)
-    {{
-        {0.0, 1.0}, // state 0: action 0 = 0, action 1 = 1
-        {0.0, 0.0}  // state 1: action 0 = 0, action 1 = 0
-    }},
-    // H = 2 (index 1) 
-    {{
-        {0.0, 1.0}, // state 0: action 0 = 0, action 1 = 1
-        {0.0, 0.0}  // state 1: action 0 = 0, action 1 = 0
-    }}
-}};
+// rewards[h][state][action] - from the r matrix
+constexpr array<array<array<double, 2>, 4>, H> rewards = {
+    {// H = 1 (index 0) - values constant across time
+     {{
+         {0.44926316, 0.10939499}, // state 0
+         {0.21953011, 0.85231770}, // state 1
+         {0.10236761, 0.06171567}, // state 2
+         {0.27516813, 0.97393949}  // state 3
+     }},
+     // H = 2 (index 1) - same values (constant in time)
+     {{
+         {0.44926316, 0.10939499}, // state 0
+         {0.21953011, 0.85231770}, // state 1
+         {0.10236761, 0.06171567}, // state 2
+         {0.27516813, 0.97393949}  // state 3
+     }},
+     {{
+         {0.44926316, 0.10939499}, // state 0
+         {0.21953011, 0.85231770}, // state 1
+         {0.10236761, 0.06171567}, // state 2
+         {0.27516813, 0.97393949}  // state 3
+     }}}};
 
 // transition_probabilities[h][action][current_state][next_state]
-constexpr array<array<array<array<double, 2>, 2>, 2>, H> transition_probabilities = {{
-    // H = 1 (index 0)
-    {{
-        // action = 0
-        {{
-            {0.9, 0.1}, // current_state 0: P(0->0)=0.9, P(0->1)=0.2  
-            {0.25, 0.75} // current_state 1: P(1->0)=0.25, P(1->1)=0.7
-        }},
-        // action = 1  
-        {{
-            {0.2, 0.8}, // current_state 0: P(0->0)=0.2, P(0->1)=0.8
-            {0.7, 0.3} // current_state 1: P(1->0)=0.75, P(1->1)=0.25
-        }}
-    }},
-    // H = 2 (index 1) - same probabilities
-    {{
-        // action = 0
-        {{
-            {0.9, 0.2}, // current_state 0: P(0->0)=0.9, P(0->1)=0.2  
-            {0.25, 0.7} // current_state 1: P(1->0)=0.25, P(1->1)=0.7
-        }},
-        // action = 1  
-        {{
-            {0.1, 0.8}, // current_state 0: P(0->0)=0.1, P(0->1)=0.8
-            {0.75, 0.3} // current_state 1: P(1->0)=0.75, P(1->1)=0.3
-        }}
-    }}
-}};
+constexpr array<array<array<array<double, 4>, 4>, 2>, H>
+    transition_probabilities = {
+        {  // H = 1 (index 0) - values constant across time
+         {{// action = 0: P(·|·,0) matrix
+           {{
+               {0.70317263, 0.29682737, 0.00000000, 0.00000000}, // from state 0
+               {0.00000000, 0.03159578, 0.00000000, 0.96840422}, // from state 1
+               {0.00000000, 0.00000000, 0.37932461, 0.62067539}, // from state 2
+               {0.30200956, 0.00000000, 0.00000000, 0.69799044}  // from state 3
+           }},
+           // action = 1: P(·|·,1) matrix
+           {{
+               {0.00000000, 0.00000000, 0.08423799, 0.91576201}, // from state 0
+               {0.80689287, 0.00000000, 0.19310713, 0.00000000}, // from state 1
+               {0.20350136, 0.79649864, 0.00000000, 0.00000000}, // from state 2
+               {0.00000000, 0.16178167, 0.00000000, 0.83821833}  // from state 3
+           }}}},
+         // H = 2 (index 1) - same probabilities (constant in time)
+         {{// action = 0: P(·|·,0) matrix
+           {{
+               {0.70317263, 0.29682737, 0.00000000, 0.00000000}, // from state 0
+               {0.00000000, 0.03159578, 0.00000000, 0.96840422}, // from state 1
+               {0.00000000, 0.00000000, 0.37932461, 0.62067539}, // from state 2
+               {0.30200956, 0.00000000, 0.00000000, 0.69799044}  // from state 3
+           }},
+           // action = 1: P(·|·,1) matrix
+           {{
+               {0.00000000, 0.00000000, 0.08423799, 0.91576201}, // from state 0
+               {0.80689287, 0.00000000, 0.19310713, 0.00000000}, // from state 1
+               {0.20350136, 0.79649864, 0.00000000, 0.00000000}, // from state 2
+               {0.00000000, 0.16178167, 0.00000000, 0.83821833}  // from state 3
+           }}}},
 
-constexpr array<int, S> initial_state = {60, 60};
+         // H = 2 (index 1) - same probabilities (constant in time)
+         {{// action = 0: P(·|·,0) matrix
+           {{
+               {0.70317263, 0.29682737, 0.00000000, 0.00000000}, // from state 0
+               {0.00000000, 0.03159578, 0.00000000, 0.96840422}, // from state 1
+               {0.00000000, 0.00000000, 0.37932461, 0.62067539}, // from state 2
+               {0.30200956, 0.00000000, 0.00000000, 0.69799044}  // from state 3
+           }},
+           // action = 1: P(·|·,1) matrix
+           {{
+               {0.00000000, 0.00000000, 0.08423799, 0.91576201}, // from state 0
+               {0.80689287, 0.00000000, 0.19310713, 0.00000000}, // from state 1
+               {0.20350136, 0.79649864, 0.00000000, 0.00000000}, // from state 2
+               {0.00000000, 0.16178167, 0.00000000, 0.83821833}  // from state 3
+           }}}}}};
+
+constexpr array<int, S> initial_state = {25, 0, 25, 25};
 
 int main() {
   RMAB<H, N, S, alpha, initial_state, rewards, transition_probabilities> rmab;
