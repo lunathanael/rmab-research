@@ -16,10 +16,11 @@ public:
 
 
 int main() {
-    constexpr auto states = generate_states<50, 4>();
-    // print_states(states);
-    constexpr auto actions = generate_actions<states[155], 10>();
+    constexpr auto states = generate_states<5, 4>();
+    constexpr auto actions = generate_actions<states, 2>();
     std::cout << actions.size() << std::endl;
-    print_states(actions);
+    for(const auto & action : actions) {
+        print_states(action);
+    }
     return 0;
 }
