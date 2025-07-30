@@ -38,3 +38,4 @@ ENV/
 complexity_analysis.png
 
 build/
+.vscode/
