@@ -192,7 +192,7 @@ constexpr auto generate_actions(const std::array<std::array<int, S>, n> &states,
     return action_counts;
 }
 
-
+hash_array<int>{}<int>()
 
 template <size_t N> struct hash_array {
     template <typename T, size_t S>
@@ -301,34 +301,28 @@ constexpr auto goal_to_int(const std::array<int, S> &goal) {
     return res;
 }
 
-template<size_t S, size_t N, size_t SIZE_OF_GOALS = 0>
-consteval auto generate_all_goals() {
-    std::vector<std::array<int, S>> goals;
+template<size_t S, size_t N>
+auto generate_all_goals() {
+    static constexpr size_t size_of_goals = static_cast<uint64_t>(std::pow(N + 1, S));
+    std::vector<std::array<int, S>> goals(size_of_goals);
 
     for(uint64_t i = 0; i < static_cast<uint64_t>(std::pow(N + 1, S)); ++i) {
         auto goal = int_to_goal<S, N>(i);
-        goals.push_back(goal);
+        goals[i] = goal;
     }
 
-    if constexpr (SIZE_OF_GOALS == 0) {
-        return goals.size();
-    } else {
-        std::array<std::array<int, S>, SIZE_OF_GOALS> res;
-        for(int i = 0; i < SIZE_OF_GOALS; ++i) {
-            res[i] = goals[i];
-        }
-        return res;
-    }
+    return goals;
 }
 
 
 template< size_t N, size_t S>
-constexpr auto calculate_coefficients() {
-    static constexpr auto size_of_goals = generate_all_goals<S, N>();
-    static constexpr auto goals = generate_all_goals<S, N, size_of_goals>();
-    std::array<std::array<double, size_of_goals>, N> coefficients;
+auto calculate_coefficients() {
+    static auto goals = generate_all_goals<S, N>();
+    std::array<std::vector<double>, N + 1> coefficients;
     for(int x = 0; x <= N; ++x) {
-        for(int i = 0; i < size_of_goals; ++i) {
+        coefficients[x].reserve(goals.size());
+        coefficients[x].resize(goals.size());
+        for(int i = 0; i < goals.size(); ++i) {
             auto goal = goals[i];
             double res = 1;
             for(int i = 1; i <= x; ++i) {
@@ -347,7 +341,7 @@ constexpr auto calculate_coefficients() {
 
 template<size_t N, size_t S>
 constexpr double multinomial(int x, const std::array<int, S> &goal, const std::array<double, S> &probs) {
-    static constexpr auto coefficients = calculate_coefficients<N, S>();
+    static auto coefficients = calculate_coefficients<N, S>();
     const auto goal_int = goal_to_int<S, N>(goal);
 
     double res = coefficients[x][goal_int];
@@ -360,8 +354,9 @@ constexpr double multinomial(int x, const std::array<int, S> &goal, const std::a
 template<size_t N, size_t S>
 auto get_action_probs(const std::array<int, S> &count_0, const std::array<std::array<double, S>, S> &probs_0, const std::array<int, S> &count_1, const std::array<std::array<double, S>, S> &probs_1) {
     static const auto states = generate_all_states<S, N>();
-    
-    std::unordered_map<std::array<int, S>, double, hash_array<S>> dp, tmp;
+    static constexpr size_t number_of_goals = std::pow(N + 1, S);
+
+    std::array<double, number_of_goals> dp, tmp;
     dp[{}] = 1;
 
     for(int i = 0; i < S; ++i) {
@@ -371,7 +366,7 @@ auto get_action_probs(const std::array<int, S> &count_0, const std::array<std::a
             double prob = multinomial<N>(count_0[i], allocation, probs_0[i]);
             for(const auto & [key, value] : dp) {
                 auto new_key = add_array(key, allocation);
-                tmp[new_key] += value * prob;
+                tmp[hash_array<N>(new_key)] += value * prob;
             }
         }
         dp = std::move(tmp);
@@ -384,7 +379,7 @@ auto get_action_probs(const std::array<int, S> &count_0, const std::array<std::a
             double prob = multinomial<N>(count_1[i], allocation, probs_1[i]);
             for(const auto & [key, value] : dp) {
                 auto new_key = add_array(key, allocation);
-                tmp[new_key] += value * prob;
+                tmp[hash_array<N>(new_key)] += value * prob;
             }
         }
         dp = std::move(tmp);

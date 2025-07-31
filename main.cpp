@@ -115,6 +115,7 @@ public:
     }
     for (int t = H - 1; t >= 0; --t) {
       for (int i = 0; i < states.size(); ++i) {
+        cout << static_cast<double>(i) / states.size() << endl;
         for (int j = 0; j < actions[i].size(); ++j) {
           double reward = r[t][i][j];
           auto op_a = subtract_array(states[i], actions[i][j]);
@@ -124,7 +125,7 @@ public:
           for (int k = 0; k < states.size(); ++k) {
             if (t != H - 1) {
             //   reward += p[0][i][j][k] * dp[t + 1][k].first;
-                reward += probs[states[k]] * dp[t + 1][k].first;
+                reward += probs[hash_array<N>(states[k])] * dp[t + 1][k].first;
             }
             if (reward > dp[t][i].first) {
               dp[t][i] = {reward, &actions[i][j]};
