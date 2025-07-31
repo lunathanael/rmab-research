@@ -40,9 +40,16 @@ public:
   }
 
   void precompute_transition_probabilities() {
+    cout << "allocating p" << endl;
+    for (int t = 0; t < 1; ++t) {
+        for (int i = 0; i < states.size(); ++i) {
+          p[t][i].reserve(actions[i].size());
+          p[t][i].resize(actions[i].size());
+        }
+    }
+    cout << "precomputing p" << endl;
     for (int t = 0; t < 1; ++t) {
       for (int i = 0; i < states.size(); ++i) {
-        p[t][i].resize(actions[i].size());
         for (int j = 0; j < actions[i].size(); ++j) {
           auto op_a = subtract_array(states[i], actions[i][j]);
           auto probs =
@@ -69,8 +76,8 @@ public:
     }
     cout << "Precomputing rewards" << endl;
     precompute_rewards();
-    cout << "Precomputing transition probabilities" << endl;
-    precompute_transition_probabilities();
+    // cout << "Precomputing transition probabilities" << endl;
+    // precompute_transition_probabilities();
     cout << "Done initializing" << endl;
   }
 
@@ -110,9 +117,14 @@ public:
       for (int i = 0; i < states.size(); ++i) {
         for (int j = 0; j < actions[i].size(); ++j) {
           double reward = r[t][i][j];
+          auto op_a = subtract_array(states[i], actions[i][j]);
+          auto probs =
+              get_action_probs<N>(actions[i][j], transition_probabilities[0][1],
+                               op_a, transition_probabilities[0][0]);
           for (int k = 0; k < states.size(); ++k) {
             if (t != H - 1) {
-              reward += p[0][i][j][k] * dp[t + 1][k].first;
+            //   reward += p[0][i][j][k] * dp[t + 1][k].first;
+                reward += probs[states[k]] * dp[t + 1][k].first;
             }
             if (reward > dp[t][i].first) {
               dp[t][i] = {reward, &actions[i][j]};
@@ -130,6 +142,7 @@ constexpr int H = 3;
 constexpr int N = 50;
 constexpr int S = 4; // 4 states based on the matrices
 constexpr double alpha = 0.4;
+
 
 // rewards[h][state][action] - from the r matrix
 constexpr array<array<array<double, 2>, 4>, H> rewards = {
