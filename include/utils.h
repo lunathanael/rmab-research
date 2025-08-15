@@ -11,6 +11,39 @@ struct is_std_array : std::false_type {};
 template<typename T, std::size_t N>
 struct is_std_array<std::array<T, N>> : std::true_type {};
 
+
+
+
+constexpr int combinations(int n, int r) {
+    if (r > n || r < 0 || n < 0) return 0;
+    if (r == 0 || r == n) return 1;
+    
+    long long result = 1;
+    r = std::min(r, n - r);
+    
+    for (int i = 0; i < r; ++i) {
+        result = result * (n - i) / (i + 1);
+    }
+    return static_cast<int>(result);
+}
+
+
+template <size_t N, typename T, size_t S>
+constexpr size_t state_to_idx(const std::array<T, S> &arr) {
+    size_t remaining_n = N, remaining_s = S;
+    size_t rank{0};
+    for(int i = S-1; i >= 0; --i) {
+        if(arr[i] > 0) {
+            rank += combinations(remaining_n + remaining_s - 1, remaining_s - 1)
+                  - combinations(remaining_n - arr[i] + remaining_s - 1, remaining_s - 1);
+        }
+        remaining_n -= arr[i];
+        --remaining_s;
+    }
+    return rank;
+}
+
+
 namespace compile_time {
 consteval int combinations(int n, int r) {
     if (r > n || r < 0 || n < 0) return 0;
@@ -29,7 +62,7 @@ template<size_t N, size_t S>
 consteval void fill_states_helper(auto& states, int& idx, std::array<int, S>& current, int pos, int remaining) {
     if (pos == S - 1) {
         current[pos] = remaining;
-        states[idx++] = current;
+        states[state_to_idx<N>(current)] = current;
         return;
     }
     
@@ -192,17 +225,6 @@ constexpr auto generate_actions(const std::array<std::array<int, S>, n> &states,
     return action_counts;
 }
 
-template <size_t N, typename T, size_t S>
-size_t state_to_idx(const std::array<T, S> &arr) {
-    size_t res = 0;
-    size_t scalar = 1;
-    for (int i = 0; i < S; ++i) {
-    res += arr[i] * scalar;
-    scalar *= N + 1;
-    }
-    return res;
-}
-
   
 template<size_t S>
 constexpr void fill_states_helper(auto& states, int& idx, std::array<int, S>& current, int pos, int remaining) {
@@ -216,20 +238,6 @@ constexpr void fill_states_helper(auto& states, int& idx, std::array<int, S>& cu
         current[pos] = i;
         fill_states_helper<S>(states, idx, current, pos + 1, remaining - i);
     }
-}
-
-
-constexpr int combinations(int n, int r) {
-    if (r > n || r < 0 || n < 0) return 0;
-    if (r == 0 || r == n) return 1;
-    
-    long long result = 1;
-    r = std::min(r, n - r);
-    
-    for (int i = 0; i < r; ++i) {
-        result = result * (n - i) / (i + 1);
-    }
-    return static_cast<int>(result);
 }
 
 template<size_t S>
