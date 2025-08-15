@@ -321,11 +321,10 @@ auto generate_all_goals() {
 
 template< size_t N, size_t S>
 auto calculate_coefficients() {
+    static constexpr size_t size_of_goals = static_cast<uint64_t>(std::pow(N + 1, S));
     static auto goals = generate_all_goals<S, N>();
-    std::array<std::vector<double>, N + 1> coefficients;
+    std::array<std::array<double, size_of_goals>, N + 1> coefficients;
     for(int x = 0; x <= N; ++x) {
-        coefficients[x].reserve(goals.size());
-        coefficients[x].resize(goals.size());
         for(int i = 0; i < goals.size(); ++i) {
             auto goal = goals[i];
             double res = 1;
