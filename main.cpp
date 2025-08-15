@@ -13,7 +13,6 @@ public:
   static_assert(alpha_n / alpha == N, "alpha * N must be an integer");
   static constexpr const auto states = compile_time::generate_states<N, S>();
   std::array<std::vector<std::array<int, S>>, states.size()> actions;
-  unordered_map<array<int, S>, int, hash_array<S>> state_to_idx;
   array<array<vector<double>, states.size()>, H> r;
   array<array<vector<array<double, states.size()>>, states.size()>, 1> p;
   array<array<pair<double, array<int, S> *>, states.size()>, H> dp;
@@ -72,7 +71,11 @@ public:
     cout << "Precomputing actions" << endl;
     actions = generate_actions(states, alpha_n);
     for (int i = 0; i < states.size(); ++i) {
-      state_to_idx[states[i]] = i;
+      if(state_to_idx<N>(states[i]) != i) {
+        cout << "state_to_idx(";
+        print_array(&states[i]);
+        cout << ") = " << state_to_idx<N>(states[i]) << " != " << i << endl;
+      }
     }
     cout << "Precomputing rewards" << endl;
     precompute_rewards();
@@ -81,7 +84,7 @@ public:
     cout << "Done initializing" << endl;
   }
 
-  static auto print_array(array<int, S> *arr) {
+  static auto print_array(const array<int, S> *arr) {
     if (arr == nullptr) {
       cout << "(nullptr)" << endl;
       return;
@@ -125,7 +128,7 @@ public:
           for (int k = 0; k < states.size(); ++k) {
             if (t != H - 1) {
             //   reward += p[0][i][j][k] * dp[t + 1][k].first;
-                reward += probs[hash_array<N>(states[k])] * dp[t + 1][k].first;
+                reward += probs[state_to_idx<N>(states[k])] * dp[t + 1][k].first;
             }
             if (reward > dp[t][i].first) {
               dp[t][i] = {reward, &actions[i][j]};
@@ -135,7 +138,7 @@ public:
       }
     }
     print_policy();
-    return dp[0][state_to_idx[initial_state]].first;
+    return dp[0][state_to_idx<N>(initial_state)].first;
   }
 };
 

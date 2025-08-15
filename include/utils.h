@@ -192,20 +192,16 @@ constexpr auto generate_actions(const std::array<std::array<int, S>, n> &states,
     return action_counts;
 }
 
-hash_array<int>{}<int>()
-
-template <size_t N> struct hash_array {
-    template <typename T, size_t S>
-    size_t operator()(const std::array<T, S> &arr) const {
-      size_t res = 0;
-      size_t scalar = 1;
-      for (int i = 0; i < S; ++i) {
-        res += arr[i] * scalar;
-        scalar *= N + 1;
-      }
-      return res;
+template <size_t N, typename T, size_t S>
+size_t state_to_idx(const std::array<T, S> &arr) {
+    size_t res = 0;
+    size_t scalar = 1;
+    for (int i = 0; i < S; ++i) {
+    res += arr[i] * scalar;
+    scalar *= N + 1;
     }
-  };
+    return res;
+}
 
   
 template<size_t S>
@@ -357,29 +353,33 @@ auto get_action_probs(const std::array<int, S> &count_0, const std::array<std::a
     static constexpr size_t number_of_goals = std::pow(N + 1, S);
 
     std::array<double, number_of_goals> dp, tmp;
-    dp[{}] = 1;
+    dp[state_to_idx<N>(std::array<int, S>{})] = 1;
 
     for(int i = 0; i < S; ++i) {
-        tmp.clear();
+        std::fill(std::begin(tmp), std::end(tmp), 0);
         const auto &allocations = states[count_0[i]];
         for(const auto & allocation : allocations) {
             double prob = multinomial<N>(count_0[i], allocation, probs_0[i]);
-            for(const auto & [key, value] : dp) {
+            for(int j = 0; j < number_of_goals; ++j) {
+                auto key = int_to_goal<S, N>(j);
+                double value = dp[j];
                 auto new_key = add_array(key, allocation);
-                tmp[hash_array<N>(new_key)] += value * prob;
+                tmp[state_to_idx<N>(new_key)] += value * prob;
             }
         }
         dp = std::move(tmp);
     }
 
     for(int i = 0; i < S; ++i) {
-        tmp.clear();
+        std::fill(std::begin(tmp), std::end(tmp), 0);
         const auto &allocations = states[count_1[i]];
         for(const auto & allocation : allocations) {
             double prob = multinomial<N>(count_1[i], allocation, probs_1[i]);
-            for(const auto & [key, value] : dp) {
+            for(int j = 0; j < number_of_goals; ++j) {
+                auto key = int_to_goal<S, N>(j);
+                double value = dp[j];
                 auto new_key = add_array(key, allocation);
-                tmp[hash_array<N>(new_key)] += value * prob;
+                tmp[state_to_idx<N>(new_key)] += value * prob;
             }
         }
         dp = std::move(tmp);
