@@ -38,34 +38,34 @@ public:
     }
   }
 
-  void precompute_transition_probabilities() {
-    cout << "allocating p" << endl;
-    for (int t = 0; t < 1; ++t) {
-        for (int i = 0; i < states.size(); ++i) {
-          p[t][i].reserve(actions[i].size());
-          p[t][i].resize(actions[i].size());
-        }
-    }
-    cout << "precomputing p" << endl;
-    for (int t = 0; t < 1; ++t) {
-      for (int i = 0; i < states.size(); ++i) {
-        for (int j = 0; j < actions[i].size(); ++j) {
-          auto op_a = subtract_array(states[i], actions[i][j]);
-          auto probs =
-              get_action_probs<N>(actions[i][j], transition_probabilities[t][1],
-                               op_a, transition_probabilities[t][0]);
-          for (int k = 0; k < states.size(); ++k) {
-            p[t][i][j][k] = probs[states[k]];
-          }
-        }
-      }
-    }
+  // void precompute_transition_probabilities() {
+  //   cout << "allocating p" << endl;
+  //   for (int t = 0; t < 1; ++t) {
+  //       for (int i = 0; i < states.size(); ++i) {
+  //         p[t][i].reserve(actions[i].size());
+  //         p[t][i].resize(actions[i].size());
+  //       }
+  //   }
+  //   cout << "precomputing p" << endl;
+  //   for (int t = 0; t < 1; ++t) {
+  //     for (int i = 0; i < states.size(); ++i) {
+  //       for (int j = 0; j < actions[i].size(); ++j) {
+  //         auto op_a = subtract_array(states[i], actions[i][j]);
+  //         auto probs =
+  //             get_action_probs<N>(actions[i][j], transition_probabilities[t][1],
+  //                              op_a, transition_probabilities[t][0]);
+  //         for (int k = 0; k < states.size(); ++k) {
+  //           p[t][i][j][k] = probs[states[k]];
+  //         }
+  //       }
+  //     }
+  //   }
     // for (int t = 1; t < H; ++t) {
     //   for (int i = 0; i < states.size(); ++i) {
     //     p[t][i] = p[t - 1][i];
     //   }
     // }
-  }
+  // }
 
   RMAB() {
     cout << "Precomputing actions" << endl;
