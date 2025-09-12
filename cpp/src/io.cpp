@@ -8,6 +8,10 @@ using namespace std;
 
 void RMAB::parse() {
   cin >> n_arms >> n_steps >> n_states >> alpha;
+  n_alpha = n_arms * alpha;
+  if(n_alpha / alpha != n_arms) {
+    std::cerr << "Warning: Integer floor precision error detected in n_alpha calculation\n";
+  }
   initial_state.resize(n_states);
   for (int i = 0; i < n_states; ++i)
     cin >> initial_state[i];
@@ -31,10 +35,10 @@ void RMAB::parse() {
 
 void RMAB::print_args() {
   cout << format("Number of arms: {}, Number of time steps: {}, Number of "
-                 "states: {}, Alpha: \n",
+                 "states: {}, Alpha: {}\n",
                  n_arms, n_steps, n_states, alpha);
   cout << "Initial state:\n";
-  for (int i = 0; i < n_arms; ++i)
+  for (int i = 0; i < n_states; ++i)
     cout << setw(4) << initial_state[i] << ' ';
   cout << '\n';
 

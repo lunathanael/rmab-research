@@ -12,7 +12,10 @@ class RMAB {
   double alpha;
   int n_arms, n_steps, n_states;
 
+  int n_alpha;
+
 public:
   void parse();
   void print_args();
+  void solve();
 };

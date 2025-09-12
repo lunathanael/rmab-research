@@ -9,7 +9,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(SOURCE_FILES
     src/matrix.cpp
-    src/rmab.cpp
+    src/io.cpp
 )
 
 add_executable(RMAB main.cpp ${SOURCE_FILES})
