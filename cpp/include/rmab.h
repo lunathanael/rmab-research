@@ -5,7 +5,7 @@
 #include <vector>
 
 class RMAB {
-  std::vector<double> initial_state;
+  std::vector<int> initial_state;
   std::vector<std::vector<std::pair<double, double>>> rewards;
   std::vector<std::pair<transition_matrix_t, transition_matrix_t>>
       transition_probabilities;

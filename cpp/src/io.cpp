@@ -2,6 +2,7 @@
 
 #include <iomanip>
 #include <iostream>
+#include <numeric>
 #include <vector>
 
 using namespace std;
@@ -13,8 +14,21 @@ void RMAB::parse() {
     std::cerr << "Warning: Integer floor precision error detected in n_alpha calculation\n";
   }
   initial_state.resize(n_states);
-  for (int i = 0; i < n_states; ++i)
-    cin >> initial_state[i];
+  
+  for (int i = 0; i < n_states; ++i) {
+    double prop;
+    cin >> prop;
+    int n = n_arms * prop;
+    if(n / prop != n_arms) {
+      std::cerr << "Warning: Integer floor precision error detected in initial state calculation\n";
+    }
+    initial_state[i] = n;
+  }
+
+  if(std::accumulate(initial_state.begin(), initial_state.end(), 0) != n_arms) {
+    std::cerr << "Warning: Initial state does not sum to number of arms\n";
+  }
+
   rewards.resize(n_steps, vector<pair<double, double>>(n_states));
   for (int t = 0; t < n_steps; ++t) {
     for (int s = 0; s < n_states; ++s)
