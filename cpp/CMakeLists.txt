@@ -9,6 +9,25 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(CMAKE_PCH_INSTANTIATE_TEMPLATES ON)
 
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build." FORCE)
+endif()
+
+set(CMAKE_CXX_FLAGS_PROFILE "-O2 -g -march=native -ffast-math -flto=auto -fno-exceptions -DNDEBUG -pg" CACHE STRING "Flags used by the Profile build type" FORCE)
+set(CMAKE_EXE_LINKER_FLAGS_PROFILE "-O2 -g -march=native -ffast-math -flto=auto -fno-exceptions -DNDEBUG -pg" CACHE STRING "Linker flags for Profile build type" FORCE)
+
+set(CMAKE_CXX_FLAGS_RELEASE "-Ofast -march=native -ffast-math -flto=auto -fno-exceptions -DNDEBUG" CACHE STRING "Flags used by the Release build type" FORCE)
+set(CMAKE_EXE_LINKER_FLAGS_RELEASE "-Ofast -march=native -ffast-math -flto=auto -fno-exceptions -DNDEBUG" CACHE STRING "Linker flags for Release build type" FORCE)
+
+set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g" CACHE STRING "Flags used by the Debug build type" FORCE)
+set(CMAKE_EXE_LINKER_FLAGS_DEBUG "" CACHE STRING "Linker flags for Debug build type" FORCE)
+
+set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O2 -g -march=native -ffast-math -flto=auto -fno-exceptions -DNDEBUG" CACHE STRING "Flags used by the RelWithDebInfo build type" FORCE)
+set(CMAKE_EXE_LINKER_FLAGS_RELWITHDEBINFO "-O2 -g -march=native -ffast-math -flto=auto -fno-exceptions -DNDEBUG" CACHE STRING "Linker flags for RelWithDebInfo build type" FORCE)
+
+set(CMAKE_CXX_FLAGS_MINSIZEREL "-Os -march=native -ffast-math -flto=auto -fno-exceptions -DNDEBUG" CACHE STRING "Flags used by the MinSizeRel build type" FORCE)
+set(CMAKE_EXE_LINKER_FLAGS_MINSIZEREL "-Os -march=native -ffast-math -flto=auto -fno-exceptions -DNDEBUG" CACHE STRING "Linker flags for MinSizeRel build type" FORCE)
+
 set(SOURCE_FILES
     src/dp.cpp
     src/matrix.cpp
@@ -29,5 +48,6 @@ target_precompile_headers(RMAB PRIVATE
 
 target_include_directories(RMAB PRIVATE include)
 
-target_compile_options(RMAB PRIVATE -Ofast -march=native -ffast-math -flto=auto -DNDEBUG -fno-exceptions)
-target_link_options(RMAB PRIVATE -Ofast -march=native -ffast-math -flto=auto -DNDEBUG -fno-exceptions)
+if(CMAKE_BUILD_TYPE STREQUAL "Profile")
+    message(STATUS "Configuring for Profile build type")
+endif()
