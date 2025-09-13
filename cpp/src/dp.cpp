@@ -14,34 +14,25 @@ DPStateIterator::DPStateIterator(int n_arms, int n_states)
 void DPStateIterator::init() {
   comp.assign(n_states, 0);
   comp.back() = n_arms;
-  lastNonZero = n_states - 1;
   idx = 0;
 }
 
 const vector<int> &DPStateIterator::current() const { return comp; }
 
-int DPStateIterator::next() {
-  if (idx >= n)
-    return n;
+bool DPStateIterator::next() {
+    if (++idx >= n) return false;
 
-  int i = n_states - 2;
-  while (i >= 0 && comp[i] == 0)
-    --i;
-
-  ++comp[i];
-
-  --comp[n_states - 1];
-
-  int sum_tail = 0;
-  for (int j = i + 1; j < n_states - 1; ++j) {
-    sum_tail += comp[j];
-    comp[j] = 0;
-  }
-  comp[n_states - 1] += sum_tail;
-  return idx++;
+    int i_pivot = n_states - 1;
+    while (i_pivot >= 0 && comp[i_pivot] == 0) {
+        i_pivot--;
+    }
+    comp[i_pivot]--;
+    comp[i_pivot - 1]++;
+    int remainder = comp[i_pivot];
+    comp[i_pivot] = 0;
+    comp[n_states - 1] += remainder;
+    return true;
 }
-
-bool DPStateIterator::done() const { return idx >= n; }
 
 int DPStateIterator::size() const { return n; }
 
@@ -105,9 +96,4 @@ double &DPLayer::operator[](const DPStateIterator &dpstate) {
   return dp[dpstate.idx];
 }
 
-void swap(DPLayer &a, DPLayer &b) noexcept {
-  a.dp.swap(b.dp);
-  swap(a.n_arms, b.n_arms);
-  swap(a.n_states, b.n_states);
-  swap(a.dim, b.dim);
-}
+void swap(DPLayer &a, DPLayer &b) noexcept { a.dp.swap(b.dp); }

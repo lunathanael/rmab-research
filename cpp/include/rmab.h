@@ -11,7 +11,6 @@ class RMAB {
       transition_probabilities;
   double alpha;
   int n_arms, n_steps, n_states;
-
   int n_alpha;
 
 public:

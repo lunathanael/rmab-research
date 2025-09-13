@@ -7,15 +7,15 @@ public:
   DPStateIterator(int n_arms, int n_states);
   void init();
   const std::vector<int> &current() const;
-  int next();
-  bool done() const;
+  bool next();
   int size() const;
 
 private:
   std::vector<int> comp;
   const int n;
   int n_arms, n_states;
-  int lastNonZero;
+  int lastNonZero, prefixSum;
+  bool done;
 
 public:
   int idx;
@@ -39,7 +39,7 @@ class DPLayer {
   int dim;
 
 public:
-  DPLayer(int n_states, int n_arms);
+  DPLayer(int n_arms, int n_states);
   double &operator[](const DPStateIterator &dpstate);
   friend void swap(DPLayer &a, DPLayer &b) noexcept;
 };
