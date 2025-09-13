@@ -1,9 +1,20 @@
 #include "prob.h"
 
+#include <array>
 #include <cmath>
 #include <numeric>
 
 using namespace std;
+
+constexpr int MAX_FACT_N = 100;
+constexpr array<double, MAX_FACT_N + 1> factorials = [] {
+  array<double, MAX_FACT_N + 1> arr;
+  arr[0] = 1;
+  for (int i = 1; i <= MAX_FACT_N; ++i) {
+    arr[i] = arr[i - 1] * i;
+  }
+  return arr;
+}();
 
 struct State::ConstStateIt {
   using iterator_category = std::forward_iterator_tag;
@@ -102,17 +113,9 @@ void multinomialDistribution(int n, const vector<double> &probs, ProbDist &out,
     current.set_at(idx, _x);
 
     double p = 1.0;
-    long long multinomialCoeff = 1;
-    long long nFact = 1;
-    for (int i = 1; i <= n; ++i)
-      nFact *= i;
-    multinomialCoeff = nFact;
+    double multinomialCoeff = factorials[n];
     for (int i = 0; i < k; ++i) {
-      long long xiFact = 1;
-      for (int j = 1; j <= current[i]; ++j)
-        xiFact *= j;
-      multinomialCoeff /= xiFact;
-
+      multinomialCoeff /= factorials[current[i]];
       p *= pow(probs[i], current[i]);
     }
 
