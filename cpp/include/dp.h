@@ -1,14 +1,16 @@
 #pragma once
 
 #include <vector>
+#include <cstdint>
 
 class DPStateIterator {
 public:
   DPStateIterator(int n_arms, int n_states);
   void init();
   const std::vector<int> &current() const;
-  bool next();
+  std::uint64_t current_hash() const;
   int size() const;
+  bool next();
 
 private:
   std::vector<int> comp;
@@ -23,6 +25,7 @@ public:
 
 class StateActionIterator {
   long long max_right_capacity(int start_idx) const;
+
 public:
   StateActionIterator(const DPStateIterator &it, int n_alpha);
   const std::vector<int> &current() const;

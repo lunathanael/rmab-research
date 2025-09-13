@@ -1,5 +1,6 @@
 #include "dp.h"
 #include "utils.h"
+#include "prob.h"
 #include <algorithm>
 #include <numeric>
 
@@ -18,6 +19,11 @@ void DPStateIterator::init() {
 }
 
 const vector<int> &DPStateIterator::current() const { return comp; }
+
+uint64_t DPStateIterator::current_hash() const {
+  State state(current(), n_arms);
+  return static_cast<uint64_t>(state);
+}
 
 bool DPStateIterator::next() {
   if (++idx >= n)

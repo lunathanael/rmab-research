@@ -51,7 +51,7 @@ double RMAB::solve(int n_arms) {
         double reward = 0;
         sit2.init();
         do {
-          reward += dist[sit2.current()] * prev[sit2];
+          reward += dist[sit2.current_hash()] * prev[sit2];
         } while (sit2.next());
         reward += calculate_reward(sit.current(), ait.current(), rewards[t]);
         mx_reward = max(mx_reward, reward);
