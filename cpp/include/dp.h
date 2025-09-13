@@ -22,6 +22,7 @@ public:
 };
 
 class StateActionIterator {
+  long long max_right_capacity(int start_idx) const;
 public:
   StateActionIterator(const DPStateIterator &it, int n_alpha);
   const std::vector<int> &current() const;
@@ -29,8 +30,9 @@ public:
 
 private:
   std::vector<int> x, y;
-  int n_states, n_alpha, sum_y;
-  bool done, started = false;
+  long long sum_y;
+  int n_states, n_alpha;
+  bool done, started;
 };
 
 class DPLayer {

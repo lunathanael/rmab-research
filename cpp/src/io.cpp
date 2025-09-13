@@ -10,32 +10,33 @@ using namespace std;
 void RMAB::parse() {
   cin >> n_arms >> n_steps >> n_states >> alpha;
   n_alpha = n_arms * alpha;
-  if(n_alpha / alpha != n_arms) {
-    std::cerr << "Warning: Integer floor precision error detected in n_alpha calculation\n";
+  if (n_alpha / alpha != n_arms) {
+    std::cerr << "Warning: Integer floor precision error detected in n_alpha "
+                 "calculation\n";
   }
   initial_state.resize(n_states);
-  
+
   for (int i = 0; i < n_states; ++i) {
     double prop;
     cin >> prop;
     int n = n_arms * prop;
-    if(n / prop != n_arms) {
-      std::cerr << "Warning: Integer floor precision error detected in initial state calculation\n";
+    if (n / prop != n_arms) {
+      std::cerr << "Warning: Integer floor precision error detected in initial "
+                   "state calculation\n";
     }
     initial_state[i] = n;
   }
 
-  if(std::accumulate(initial_state.begin(), initial_state.end(), 0) != n_arms) {
+  if (std::accumulate(initial_state.begin(), initial_state.end(), 0) !=
+      n_arms) {
     std::cerr << "Warning: Initial state does not sum to number of arms\n";
   }
 
   rewards.resize(n_steps, vector<pair<double, double>>(n_states));
-  for (int t = 0; t < n_steps; ++t) {
+  for (int t = 0; t < n_steps; ++t)
     for (int s = 0; s < n_states; ++s)
-      cin >> rewards[t][s].first;
-    for (int s = 0; s < n_states; ++s)
-      cin >> rewards[t][s].second;
-  }
+      cin >> rewards[t][s].first >> rewards[t][s].second;
+
   transition_probabilities.resize(n_steps);
   for (int t = 0; t < n_steps; ++t) {
     transition_probabilities[t].first.resize(n_states,
@@ -58,16 +59,10 @@ void RMAB::print_args() {
 
   cout << "Rewards:\n";
   for (int t = 0; t < n_steps; ++t) {
-    cout << format("r({},0)=\n", t);
+    cout << format("r{}(· | ·)=\n", t);
     for (int s = 0; s < n_states; ++s) {
-      cout << setw(5) << rewards[t][s].first;
+      cout << setw(5) << rewards[t][s].first << setw(5) << rewards[t][s].second << '\n';
     }
-    cout << '\n';
-    cout << format("r({},1)=\n", t);
-    for (int s = 0; s < n_states; ++s) {
-      cout << setw(5) << rewards[t][s].second;
-    }
-    cout << '\n';
   }
 
   cout << "Transition Probabilities:\n";

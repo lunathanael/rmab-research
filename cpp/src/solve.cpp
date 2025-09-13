@@ -25,7 +25,7 @@ void RMAB::solve() {
     do {
       StateActionIterator ait(sit, n_alpha);
       double mx_reward = numeric_limits<double>::lowest();
-      do {
+      while (ait.next()) {
         auto dist = fullTransitionDistribution(
             sit.current(), ait.current(), transition_probabilities[t].first,
             transition_probabilities[t].second);
@@ -36,7 +36,7 @@ void RMAB::solve() {
         } while (sit2.next());
         reward += calculate_reward(sit.current(), ait.current(), rewards[t]);
         mx_reward = max(mx_reward, reward);
-      } while (ait.next());
+      }
       curr[sit] = mx_reward;
     } while (sit.next());
     swap(curr, prev);
@@ -46,7 +46,7 @@ void RMAB::solve() {
   for (int i = 0; i < sit.size(); i = sit.next()) {
     if (equal(sit.current().begin(), sit.current().end(),
               initial_state.begin())) {
-      cout << prev[sit] << endl;
+      cout << prev[sit] / n_arms << endl;
       break;
     }
   }
