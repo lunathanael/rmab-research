@@ -8,28 +8,11 @@
 using namespace std;
 
 void RMAB::parse() {
-  cin >> n_arms >> n_steps >> n_states >> alpha;
-  n_alpha = n_arms * alpha;
-  if (n_alpha / alpha != n_arms) {
-    std::cerr << "Warning: Integer floor precision error detected in n_alpha "
-                 "calculation\n";
-  }
-  initial_state.resize(n_states);
+  cin >> n_steps >> n_states >> alpha;
+  initial_prop.resize(n_states);
 
   for (int i = 0; i < n_states; ++i) {
-    double prop;
-    cin >> prop;
-    int n = n_arms * prop;
-    if (n / prop != n_arms) {
-      std::cerr << "Warning: Integer floor precision error detected in initial "
-                   "state calculation\n";
-    }
-    initial_state[i] = n;
-  }
-
-  if (std::accumulate(initial_state.begin(), initial_state.end(), 0) !=
-      n_arms) {
-    std::cerr << "Warning: Initial state does not sum to number of arms\n";
+    cin >> initial_prop[i];
   }
 
   rewards.resize(n_steps, vector<pair<double, double>>(n_states));
@@ -49,19 +32,20 @@ void RMAB::parse() {
 }
 
 void RMAB::print_args() {
-  cout << format("Number of arms: {}, Number of time steps: {}, Number of "
+  cout << format("Number of time steps: {}, Number of "
                  "states: {}, Alpha: {}\n",
-                 n_arms, n_steps, n_states, alpha);
-  cout << "Initial state:\n";
+                 n_steps, n_states, alpha);
+  cout << "Initial prop:\n";
   for (int i = 0; i < n_states; ++i)
-    cout << setw(4) << initial_state[i] << ' ';
+    cout << setw(4) << initial_prop[i] << ' ';
   cout << '\n';
 
   cout << "Rewards:\n";
   for (int t = 0; t < n_steps; ++t) {
     cout << format("r{}(· | ·)=\n", t);
     for (int s = 0; s < n_states; ++s) {
-      cout << setw(5) << rewards[t][s].first << setw(5) << rewards[t][s].second << '\n';
+      cout << setw(5) << rewards[t][s].first << setw(5) << rewards[t][s].second
+           << '\n';
     }
   }
 

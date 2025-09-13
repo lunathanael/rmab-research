@@ -5,16 +5,15 @@
 #include <vector>
 
 class RMAB {
-  std::vector<int> initial_state;
+  std::vector<double> initial_prop;
   std::vector<std::vector<std::pair<double, double>>> rewards;
   std::vector<std::pair<transition_matrix_t, transition_matrix_t>>
       transition_probabilities;
   double alpha;
-  int n_arms, n_steps, n_states;
-  int n_alpha;
+  int n_steps, n_states;
 
 public:
   void parse();
   void print_args();
-  void solve();
+  double solve(int n_arms);
 };
