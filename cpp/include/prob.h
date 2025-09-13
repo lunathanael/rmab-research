@@ -3,6 +3,8 @@
 #include <cstdint>
 #include <map>
 #include <vector>
+#include <unordered_map>
+#include <ext/pb_ds/assoc_container.hpp>
 
 class State {
   std::uint64_t val;
@@ -33,9 +35,18 @@ public:
   ConstStateIt begin() const;
   ConstStateIt end() const;
 
-  operator uint64_t() const { return val; }
+  operator std::uint64_t() const { return val; }
 };
-using ProbDist = std::map<std::uint64_t, double>;
+struct chash {
+	// any random-ish large odd number will do
+	static constexpr uint64_t C = uint64_t(2e18 * M_PI) + 71;
+	// random 32-bit number
+	size_t operator()(std::uint64_t x) const {
+		// see https://gcc.gnu.org/onlinedocs/gcc/Other-Builtins.html
+		return __builtin_bswap64(x * C);
+	}
+};
+using ProbDist = __gnu_pbds::gp_hash_table<std::uint64_t, double, chash>;
 
 void multinomialDistribution(int n, const std::vector<double> &probs,
                              ProbDist &out, State current, int idx = 0);
