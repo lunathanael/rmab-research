@@ -39,11 +39,27 @@ int DPStateIterator::next() {
   return idx++;
 }
 
-DPLayer::DPLayer(int n_states, int n_arms)
+bool DPStateIterator::done() const {
+    return idx >= n;
+}
+
+int DPStateIterator::end() const {
+    return n;
+}
+
+DPLayer::DPLayer(int n_arms, int n_states)
     : n_arms{n_arms}, n_states{n_states} {
   dim = combinations(n_arms + n_states - 1, n_states - 1);
+  dp.assign(dim, 0);
 }
 
 double& DPLayer::operator[](const DPStateIterator& dpstate) {
   return dp[dpstate.idx];
+}
+
+void swap(DPLayer& a, DPLayer& b) noexcept {
+    a.dp.swap(b.dp);           // O(1) vector swap
+    std::swap(a.n_arms, b.n_arms);
+    std::swap(a.n_states, b.n_states);
+    std::swap(a.dim, b.dim);
 }
