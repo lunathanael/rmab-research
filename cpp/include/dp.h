@@ -9,7 +9,7 @@ public:
   const std::vector<int> &current() const;
   int next();
   bool done() const;
-  int end() const;
+  int size() const;
 
 private:
   std::vector<int> comp;
@@ -21,6 +21,18 @@ public:
   int idx;
 };
 
+class StateActionIterator {
+public:
+  StateActionIterator(const DPStateIterator &it, int n_alpha);
+  const std::vector<int> &current() const;
+  bool next();
+
+private:
+  std::vector<int> x, y;
+  int n_states, n_alpha, sum_y;
+  bool done, started = false;
+};
+
 class DPLayer {
   std::vector<double> dp;
   int n_arms, n_states;
@@ -29,5 +41,5 @@ class DPLayer {
 public:
   DPLayer(int n_states, int n_arms);
   double &operator[](const DPStateIterator &dpstate);
-  friend void swap(DPLayer& a, DPLayer& b) noexcept;
+  friend void swap(DPLayer &a, DPLayer &b) noexcept;
 };

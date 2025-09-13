@@ -9,8 +9,8 @@ void RMAB::solve() {
     DPStateIterator it(n_arms, n_states);
     for(int t = n_steps - 1; t >= 0; --t) {
         it.init();
-        for(int i = 0; i < it.end(); i = it.next()) {
-            
+        for(int i = 0; i < it.size(); i = it.next()) {
+
         }
     }
 }

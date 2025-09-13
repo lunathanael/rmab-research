@@ -1,5 +1,7 @@
 #include "dp.h"
 #include "utils.h"
+#include <algorithm>
+#include <numeric>
 
 using namespace std;
 
@@ -39,12 +41,58 @@ int DPStateIterator::next() {
   return idx++;
 }
 
-bool DPStateIterator::done() const {
-    return idx >= n;
+bool DPStateIterator::done() const { return idx >= n; }
+
+int DPStateIterator::size() const { return n; }
+
+StateActionIterator::StateActionIterator(const DPStateIterator &it, int n_alpha)
+    : x(it.current()), n_states(it.size()), n_alpha(n_alpha), done(false) {
+  y.assign(n_states, 0);
+  sum_y = 0;
 }
 
-int DPStateIterator::end() const {
-    return n;
+const vector<int> &StateActionIterator::current() const { return y; }
+
+bool StateActionIterator::next() {
+  if (done)
+    return false;
+
+  if (sum_y == 0 && !started) {
+    started = true;
+    if (n_alpha == 0)
+      done = true;
+    return true;
+  }
+
+  for (int i = n_states - 1; i >= 0; --i) {
+    if (y[i] < min(x[i], n_alpha - (sum_y - y[i]))) {
+      ++y[i];
+      sum_y = accumulate(y.begin(), y.end(), 0);
+
+      for (int j = i + 1; j < n_states; ++j)
+        y[j] = 0;
+      sum_y = accumulate(y.begin(), y.end(), 0);
+
+      if (sum_y > n_alpha)
+        continue;
+
+      int rem = n_alpha - sum_y;
+      for (int j = n_states - 1; j > i && rem > 0; --j) {
+        int add = min(rem, x[j]);
+        y[j] = add;
+        rem -= add;
+      }
+      sum_y = accumulate(y.begin(), y.end(), 0);
+
+      if (sum_y == n_alpha)
+        return true;
+      else
+        continue;
+    }
+  }
+
+  done = true;
+  return false;
 }
 
 DPLayer::DPLayer(int n_arms, int n_states)
@@ -53,13 +101,13 @@ DPLayer::DPLayer(int n_arms, int n_states)
   dp.assign(dim, 0);
 }
 
-double& DPLayer::operator[](const DPStateIterator& dpstate) {
+double &DPLayer::operator[](const DPStateIterator &dpstate) {
   return dp[dpstate.idx];
 }
 
-void swap(DPLayer& a, DPLayer& b) noexcept {
-    a.dp.swap(b.dp);           // O(1) vector swap
-    std::swap(a.n_arms, b.n_arms);
-    std::swap(a.n_states, b.n_states);
-    std::swap(a.dim, b.dim);
+void swap(DPLayer &a, DPLayer &b) noexcept {
+  a.dp.swap(b.dp);
+  swap(a.n_arms, b.n_arms);
+  swap(a.n_states, b.n_states);
+  swap(a.dim, b.dim);
 }
