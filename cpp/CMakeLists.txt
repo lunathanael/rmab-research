@@ -24,6 +24,7 @@ target_precompile_headers(RMAB PRIVATE
     include/matrix.h
     include/rmab.h
     include/utils.h
+    include/prob.h
 )
 
 target_include_directories(RMAB PRIVATE include)
