@@ -43,6 +43,11 @@ bool DPStateIterator::next() {
 
 int DPStateIterator::size() const { return n; }
 
+void DPStateIterator::set(int target_idx) {
+  init();
+  while(idx < target_idx && next());
+}
+
 long long StateActionIterator::max_right_capacity(int start_idx) const {
   long long capacity = 0;
   for (int k = start_idx; k < n_states; ++k) {
@@ -135,6 +140,10 @@ DPLayer::DPLayer(int n_arms, int n_states)
 
 double &DPLayer::operator[](const DPStateIterator &dpstate) {
   return dp[dpstate.idx];
+}
+
+int DPLayer::size() const {
+  return dim;
 }
 
 void swap(DPLayer &a, DPLayer &b) noexcept { a.dp.swap(b.dp); }

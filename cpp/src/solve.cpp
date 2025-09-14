@@ -2,6 +2,7 @@
 #include "prob.h"
 #include "rmab.h"
 #include "utils.h"
+#include "omp.h"
 
 #include <limits>
 #include <numeric>
@@ -39,10 +40,12 @@ double RMAB::solve(int n_arms) {
 
   MultiDist md(n_arms, n_states);
   DPLayer prev(n_arms, n_states), curr(n_arms, n_states);
-  DPStateIterator sit(n_arms, n_states), sit2(n_arms, n_states);
   for (int t = n_steps - 1; t >= 0; --t) {
-    sit.init();
-    do {
+    #pragma omp parallel for schedule(dynamic)
+    for (int idx = 0; idx < prev.size(); ++idx) {
+      DPStateIterator sit(n_arms, n_states);
+      sit.set(idx);
+
       StateActionIterator ait(sit, n_alpha);
       double mx_reward = numeric_limits<double>::lowest();
       while (ait.next()) {
@@ -50,6 +53,7 @@ double RMAB::solve(int n_arms) {
             sit.current(), ait.current(), transition_probabilities[t].first,
             transition_probabilities[t].second);
         double reward = 0;
+        DPStateIterator sit2(n_arms, n_states);
         sit2.init();
         do {
           reward += dist[sit2.current_hash(md)] * prev[sit2];
@@ -58,10 +62,11 @@ double RMAB::solve(int n_arms) {
         mx_reward = max(mx_reward, reward);
       }
       curr[sit] = mx_reward;
-    } while (sit.next());
+    }
     swap(curr, prev);
   }
 
+  DPStateIterator sit(n_arms, n_states);
   sit.init();
   for (int i = 0; i < sit.size(); i = sit.next()) {
     if (equal(sit.current().begin(), sit.current().end(),

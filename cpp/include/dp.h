@@ -13,6 +13,7 @@ public:
   std::uint64_t current_hash(const MultiDist& md) const;
   int size() const;
   bool next();
+  void set(int target_idx);
 
 private:
   std::vector<int> comp;
@@ -48,5 +49,6 @@ class DPLayer {
 public:
   DPLayer(int n_arms, int n_states);
   double &operator[](const DPStateIterator &dpstate);
+  int size() const;
   friend void swap(DPLayer &a, DPLayer &b) noexcept;
 };
