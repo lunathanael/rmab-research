@@ -37,6 +37,7 @@ double RMAB::solve(int n_arms) {
     cerr << "Warning: Initial state does not sum to number of arms\n";
   }
 
+  MultiDist md(n_arms, n_states);
   DPLayer prev(n_arms, n_states), curr(n_arms, n_states);
   DPStateIterator sit(n_arms, n_states), sit2(n_arms, n_states);
   for (int t = n_steps - 1; t >= 0; --t) {
@@ -45,13 +46,13 @@ double RMAB::solve(int n_arms) {
       StateActionIterator ait(sit, n_alpha);
       double mx_reward = numeric_limits<double>::lowest();
       while (ait.next()) {
-        auto dist = fullTransitionDistribution(
+        auto dist = md.fullTransitionDistribution(
             sit.current(), ait.current(), transition_probabilities[t].first,
             transition_probabilities[t].second);
         double reward = 0;
         sit2.init();
         do {
-          reward += dist[sit2.current_hash()] * prev[sit2];
+          reward += dist[sit2.current_hash(md)] * prev[sit2];
         } while (sit2.next());
         reward += calculate_reward(sit.current(), ait.current(), rewards[t]);
         mx_reward = max(mx_reward, reward);

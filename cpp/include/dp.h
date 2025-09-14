@@ -1,5 +1,7 @@
 #pragma once
 
+#include "prob.h"
+
 #include <vector>
 #include <cstdint>
 
@@ -8,7 +10,7 @@ public:
   DPStateIterator(int n_arms, int n_states);
   void init();
   const std::vector<int> &current() const;
-  std::uint64_t current_hash() const;
+  std::uint64_t current_hash(const MultiDist& md) const;
   int size() const;
   bool next();
 
