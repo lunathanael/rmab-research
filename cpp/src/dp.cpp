@@ -43,9 +43,47 @@ bool DPStateIterator::next() {
 
 int DPStateIterator::size() const { return n; }
 
+
 void DPStateIterator::set(int target_idx) {
-  init();
-  while(idx < target_idx && next());
+  comp.assign(n_states, 0);
+
+  int remaining = n_arms;
+  unsigned long long idx_left = static_cast<unsigned long long>(target_idx);
+
+  for (int i = 0; i < n_states; ++i) {
+    if (i == n_states - 1) {
+      comp[i] = remaining;
+      break;
+    }
+
+    int chosen = 0;
+    for (int val = 0; val <= remaining; ++val) {
+      int parts_remaining = n_states - i - 1;
+      unsigned long long count = combinationsull((remaining - val) + (parts_remaining - 1),
+                                         parts_remaining - 1);
+
+      if (idx_left < count) {
+        chosen = val;
+        remaining -= val;
+        break;
+      } else {
+        idx_left -= count;
+      }
+    }
+    comp[i] = chosen;
+  }
+
+  idx = target_idx;
+
+  lastNonZero = n_states - 1;
+  while (lastNonZero > 0 && comp[lastNonZero] == 0) --lastNonZero;
+
+  prefixSum = 0;
+  if (lastNonZero > 0) {
+    prefixSum = std::accumulate(comp.begin(), comp.begin() + lastNonZero, 0);
+  }
+
+  done = false;
 }
 
 long long StateActionIterator::max_right_capacity(int start_idx) const {

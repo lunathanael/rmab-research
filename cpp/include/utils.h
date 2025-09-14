@@ -17,3 +17,15 @@ constexpr int combinations(int n, int r) {
   }
   return static_cast<int>(result);
 }
+
+constexpr unsigned long long combinationsull(int n, int k) {
+  if (k < 0 || k > n) return 0ULL;
+  if (k == 0 || k == n) return 1ULL;
+  if (k > n - k) k = n - k;
+  __int128 res = 1;
+  for (int i = 1; i <= k; ++i) {
+    res = res * (n - k + i);
+    res /= i;
+  }
+  return static_cast<unsigned long long>(res);
+}
