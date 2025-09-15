@@ -52,6 +52,7 @@ target_precompile_headers(RMAB PRIVATE
 
 target_include_directories(RMAB PRIVATE include)
 
+target_include_directories(RMAB PRIVATE ~/unordered_dense/include)
 target_link_libraries(RMAB PRIVATE OpenMP::OpenMP_CXX)
 
 if(CMAKE_BUILD_TYPE STREQUAL "Profile")

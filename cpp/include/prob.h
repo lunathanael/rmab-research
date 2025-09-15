@@ -2,27 +2,10 @@
 
 #include "utils.h"
 #include <cstdint>
-#include <ext/pb_ds/assoc_container.hpp>
-#include <map>
-#include <unordered_map>
 #include <vector>
+#include <ankerl/unordered_dense.h>
 
-struct chash {
-  // any random-ish large odd number will do
-  static constexpr uint64_t C = uint64_t(2e18 * M_PI) + 71;
-  // random 32-bit number
-  size_t operator()(std::uint64_t x) const {
-    // see https://gcc.gnu.org/onlinedocs/gcc/Other-Builtins.html
-    return __builtin_bswap64(x * C);
-  }
-};
-
-using _underlying_table_t =
-    __gnu_pbds::gp_hash_table<std::uint64_t, double, chash>;
-class ProbDist : public _underlying_table_t {
-public:
-  using _underlying_table_t::operator[];
-};
+using ProbDist = ankerl::unordered_dense::map<std::uint64_t, double>;
 
 class MultiDist {
 public:
