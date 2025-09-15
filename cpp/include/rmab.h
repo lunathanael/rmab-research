@@ -1,6 +1,7 @@
 #pragma once
 
 #include "matrix.h"
+#include "dp.h"
 
 #include <vector>
 
@@ -15,5 +16,5 @@ class RMAB {
 public:
   void parse();
   void print_args();
-  double solve(int n_arms);
+  DPValue solve(int n_arms);
 };
