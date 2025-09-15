@@ -52,8 +52,8 @@ double RMAB::solve(int n_arms) {
             curr_state, ait.current(), transition_probabilities[t].first,
             transition_probabilities[t].second);
         double reward = 0;
-        for (int idx = 0; idx < dps.size(); ++idx) {
-          const auto &nxt_state = dps[idx];
+        for (int i = 0; i < dps.size(); ++i) {
+          const auto &nxt_state = dps[i];
           reward += dist[nxt_state] * prev[nxt_state];
         }
         reward += calculate_reward(curr_state, ait.current(), rewards[t]);
