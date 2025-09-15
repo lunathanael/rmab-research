@@ -15,8 +15,8 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build." FORCE)
 endif()
 
-set(CMAKE_CXX_FLAGS_PROFILE "-O2 -g -march=native -ffast-math -flto=auto -fno-exceptions -DNDEBUG -pg ${OpenMP_CXX_FLAGS}" CACHE STRING "Flags used by the Profile build type" FORCE)
-set(CMAKE_EXE_LINKER_FLAGS_PROFILE "-O2 -g -march=native -ffast-math -flto=auto -fno-exceptions -DNDEBUG -pg ${OpenMP_CXX_FLAGS}" CACHE STRING "Linker flags for Profile build type" FORCE)
+set(CMAKE_CXX_FLAGS_PROFILE "-O3 -g -march=native -ffast-math -flto=auto -fno-exceptions -DNDEBUG -pg ${OpenMP_CXX_FLAGS}" CACHE STRING "Flags used by the Profile build type" FORCE)
+set(CMAKE_EXE_LINKER_FLAGS_PROFILE "-O3 -g -march=native -ffast-math -flto=auto -fno-exceptions -DNDEBUG -pg ${OpenMP_CXX_FLAGS}" CACHE STRING "Linker flags for Profile build type" FORCE)
 
 set(CMAKE_CXX_FLAGS_RELEASE "-Ofast -march=native -ffast-math -flto=auto -fno-exceptions -DNDEBUG ${OpenMP_CXX_FLAGS}" CACHE STRING "Flags used by the Release build type" FORCE)
 set(CMAKE_EXE_LINKER_FLAGS_RELEASE "-Ofast -march=native -ffast-math -flto=auto -fno-exceptions -DNDEBUG ${OpenMP_CXX_FLAGS}" CACHE STRING "Linker flags for Release build type" FORCE)
