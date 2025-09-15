@@ -20,10 +20,8 @@ int BitArray::operator[](int idx) const {
   return (val >> (idx * MASK_BITS)) & MASK;
 }
 void BitArray::set_at(int idx, int x) {
-  int diff = (x - this->operator[](idx));
   val = (val & ~(MASK << (idx * MASK_BITS))) | (x << (idx * MASK_BITS));
 }
-#include <cassert>
 int BitArray::sum() const {
   int total = 0;
   for (auto x = val; x; x >>= MASK_BITS) {
