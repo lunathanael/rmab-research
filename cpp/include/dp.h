@@ -29,6 +29,7 @@ public:
   std::uint64_t relative_idx;
   DPState(const std::vector<int> &v, std::uint64_t relative_idx)
       : BitArray(v), relative_idx{relative_idx} {}
+  DPState(const BitArray &x, int n_arms, int n_states);
 };
 
 class DPStates {
@@ -58,14 +59,22 @@ private:
   bool done, started;
 };
 
+struct DPValue {
+  double expectation;
+  BitArray best_action;
+  DPValue(double val) : expectation{val} {}
+  DPValue(double expectation, BitArray best_action)
+      : expectation{expectation}, best_action{best_action} {}
+};
+
 class DPLayer {
-  std::vector<double> dp;
+  std::vector<DPValue> dp;
   int n_arms, n_states;
   int dim;
 
 public:
   DPLayer(int n_arms, int n_states);
-  double &operator[](const DPState &dpstate);
+  DPValue &operator[](const DPState &dpstate);
   int size() const;
   friend void swap(DPLayer &a, DPLayer &b) noexcept;
 };

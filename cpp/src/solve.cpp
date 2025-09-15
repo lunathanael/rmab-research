@@ -47,28 +47,40 @@ double RMAB::solve(int n_arms) {
       const auto &curr_state = dps[idx];
       StateActionIterator ait(curr_state, n_states, n_alpha);
       double mx_reward = numeric_limits<double>::lowest();
+      BitArray best_action;
       while (ait.next()) {
-        auto dist = md.fullTransitionDistribution(
-            curr_state, ait.current(), transition_probabilities[t].first,
-            transition_probabilities[t].second);
         double reward = 0;
-        for (int i = 0; i < dps.size(); ++i) {
-          const auto &nxt_state = dps[i];
-          reward += dist[nxt_state] * prev[nxt_state];
+        if(t < n_steps - 1) {
+          auto dist = md.fullTransitionDistribution(
+              curr_state, ait.current(), transition_probabilities[t].first,
+              transition_probabilities[t].second);
+          for (int i = 0; i < dps.size(); ++i) {
+            const auto &nxt_state = dps[i];
+            reward += dist[nxt_state] * prev[nxt_state].expectation;
+          }
         }
         reward += calculate_reward(curr_state, ait.current(), rewards[t]);
+        if(reward > mx_reward) {
+          mx_reward = reward;
+          best_action = BitArray(ait.current());
+        }
         mx_reward = max(mx_reward, reward);
       }
-      curr[curr_state] = mx_reward;
+      curr[curr_state] = {mx_reward, best_action};
     }
     swap(curr, prev);
   }
 
-  for (int i = 0; i < dps.size(); ++i) {
-    const auto &state = dps[i];
-    const auto statevec = state.to_vector();
-    if (equal(initial_state.begin(), initial_state.end(), statevec.begin())) {
-      return prev[state] / n_arms;
+  for(int i = 0; i < dps.size(); ++i) {
+    const auto& state = dps[i];
+    if(BitArray(initial_state) == state) {
+      const auto& res = prev[state];
+      cout << "Best Action:\n";
+      for(int i : res.best_action.to_vector()) {
+        cout << i << ' ';
+      }
+      cout << '\n';
+      return res.expectation / n_arms;
     }
   }
   return -1;

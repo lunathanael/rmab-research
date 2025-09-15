@@ -5,6 +5,20 @@
 #include <numeric>
 
 using namespace std;
+unsigned long long _dpstate_idx(const BitArray& x, int n_arms, int n_states) {
+    unsigned long long calculated_idx = 0;
+    int remaining_arms = n_arms;
+    for (int i = 0; i < n_states; ++i) {
+        int current_val = x[i];
+        for (int val = 0; val < current_val; ++val) {
+            int arms_for_remaining_states = remaining_arms - val;
+            int parts_remaining = n_states - i - 1;
+            calculated_idx += combinationsull(arms_for_remaining_states + parts_remaining - 1, parts_remaining - 1);
+        }
+        remaining_arms -= current_val;
+    }
+    return calculated_idx;
+}
 
 DPStates::DPStates(int n_arms, int n_states)
     : n{combinationsull(n_arms + n_states - 1, n_states - 1)}, n_arms(n_arms),
@@ -140,7 +154,7 @@ DPLayer::DPLayer(int n_arms, int n_states)
   dp.assign(dim, 0);
 }
 
-double &DPLayer::operator[](const DPState &dpstate) {
+DPValue &DPLayer::operator[](const DPState &dpstate) {
   return dp[dpstate.relative_idx];
 }
 
