@@ -1,30 +1,11 @@
 #pragma once
 
+#include "utils.h"
 #include <cstdint>
 #include <ext/pb_ds/assoc_container.hpp>
 #include <map>
 #include <unordered_map>
 #include <vector>
-
-class MultiDist;
-class State {
-  static constexpr int MASK_BITS = 7;
-  static constexpr std::uint64_t MASK = (1ULL << MASK_BITS) - 1;
-
-  std::uint64_t val;
-  int rem;
-
-public:
-  State(const MultiDist &md) : val{0}, rem{0} {}
-  State(const MultiDist &md, const std::vector<int> &v);
-
-  std::vector<int> to_vector() const;
-  int operator[](int idx) const;
-  void set_at(int idx, int x);
-  int remaining() const;
-
-  operator std::uint64_t() const { return val; }
-};
 
 struct chash {
   // any random-ish large odd number will do
@@ -35,7 +16,13 @@ struct chash {
     return __builtin_bswap64(x * C);
   }
 };
-using ProbDist = __gnu_pbds::gp_hash_table<std::uint64_t, double, chash>;
+
+using _underlying_table_t =
+    __gnu_pbds::gp_hash_table<std::uint64_t, double, chash>;
+class ProbDist : public _underlying_table_t {
+public:
+  using _underlying_table_t::operator[];
+};
 
 class MultiDist {
 public:
@@ -44,13 +31,12 @@ public:
   MultiDist(int n_arms, int n_states) : n_arms{n_arms}, n_states{n_states} {}
 
   void multinomialDistribution(int n, const std::vector<double> &probs,
-                               ProbDist &out, State current, int idx = 0);
+                               ProbDist &out, BitArray current, int idx = 0);
 
   ProbDist convolve(const ProbDist &a, const ProbDist &b);
 
   ProbDist
-  fullTransitionDistribution(const std::vector<int> &S,
-                             const std::vector<int> &A,
+  fullTransitionDistribution(const BitArray &S, const std::vector<int> &A,
                              const std::vector<std::vector<double>> &p0,
                              const std::vector<std::vector<double>> &p1);
 };

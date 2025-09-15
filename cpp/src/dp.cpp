@@ -1,13 +1,26 @@
 #include "dp.h"
-#include "utils.h"
 #include "prob.h"
+#include "utils.h"
 #include <algorithm>
 #include <numeric>
 
 using namespace std;
 
+DPStates::DPStates(int n_arms, int n_states)
+    : n{combinationsull(n_arms + n_states - 1, n_states - 1)}, n_arms(n_arms),
+      n_states(n_states) {
+  dp_states.reserve(n);
+  DPStateIterator sit(n_arms, n_states);
+  sit.init();
+
+  for (int i = 0; i < n; ++i) {
+    dp_states.emplace_back(sit.current(), sit.idx);
+    sit.next();
+  }
+}
+
 DPStateIterator::DPStateIterator(int n_arms, int n_states)
-    : n{combinations(n_arms + n_states - 1, n_states - 1)}, n_arms(n_arms),
+    : n{combinationsull(n_arms + n_states - 1, n_states - 1)}, n_arms(n_arms),
       n_states(n_states) {
   init();
 }
@@ -19,11 +32,6 @@ void DPStateIterator::init() {
 }
 
 const vector<int> &DPStateIterator::current() const { return comp; }
-
-uint64_t DPStateIterator::current_hash(const MultiDist& md) const {
-  State state(md, current());
-  return static_cast<uint64_t>(state);
-}
 
 bool DPStateIterator::next() {
   if (++idx >= n)
@@ -41,51 +49,6 @@ bool DPStateIterator::next() {
   return true;
 }
 
-int DPStateIterator::size() const { return n; }
-
-
-void DPStateIterator::set(int target_idx) {
-  comp.assign(n_states, 0);
-
-  int remaining = n_arms;
-  unsigned long long idx_left = static_cast<unsigned long long>(target_idx);
-
-  for (int i = 0; i < n_states; ++i) {
-    if (i == n_states - 1) {
-      comp[i] = remaining;
-      break;
-    }
-
-    int chosen = 0;
-    for (int val = 0; val <= remaining; ++val) {
-      int parts_remaining = n_states - i - 1;
-      unsigned long long count = combinationsull((remaining - val) + (parts_remaining - 1),
-                                         parts_remaining - 1);
-
-      if (idx_left < count) {
-        chosen = val;
-        remaining -= val;
-        break;
-      } else {
-        idx_left -= count;
-      }
-    }
-    comp[i] = chosen;
-  }
-
-  idx = target_idx;
-
-  lastNonZero = n_states - 1;
-  while (lastNonZero > 0 && comp[lastNonZero] == 0) --lastNonZero;
-
-  prefixSum = 0;
-  if (lastNonZero > 0) {
-    prefixSum = std::accumulate(comp.begin(), comp.begin() + lastNonZero, 0);
-  }
-
-  done = false;
-}
-
 long long StateActionIterator::max_right_capacity(int start_idx) const {
   long long capacity = 0;
   for (int k = start_idx; k < n_states; ++k) {
@@ -94,9 +57,10 @@ long long StateActionIterator::max_right_capacity(int start_idx) const {
   return capacity;
 }
 
-StateActionIterator::StateActionIterator(const DPStateIterator &it, int n_alpha)
-    : x(it.current()), n_states(it.current().size()), n_alpha(n_alpha),
-      done(false), started{false} {
+StateActionIterator::StateActionIterator(const BitArray &state, int n_states,
+                                         int n_alpha)
+    : x(state), n_states(n_states), n_alpha(n_alpha), done(false),
+      started{false} {
   y.assign(n_states, 0);
   sum_y = 0;
 }
@@ -176,12 +140,10 @@ DPLayer::DPLayer(int n_arms, int n_states)
   dp.assign(dim, 0);
 }
 
-double &DPLayer::operator[](const DPStateIterator &dpstate) {
-  return dp[dpstate.idx];
+double &DPLayer::operator[](const DPState &dpstate) {
+  return dp[dpstate.relative_idx];
 }
 
-int DPLayer::size() const {
-  return dim;
-}
+int DPLayer::size() const { return dim; }
 
 void swap(DPLayer &a, DPLayer &b) noexcept { a.dp.swap(b.dp); }

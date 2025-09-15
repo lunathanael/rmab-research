@@ -36,11 +36,13 @@ set(SOURCE_FILES
     src/io.cpp
     src/solve.cpp
     src/prob.cpp
+    src/utils.cpp
 )
 
 add_executable(RMAB main.cpp ${SOURCE_FILES})
 
 target_precompile_headers(RMAB PRIVATE
+    include/utils.h
     include/dp.h
     include/matrix.h
     include/rmab.h

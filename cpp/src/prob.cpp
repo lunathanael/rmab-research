@@ -16,37 +16,11 @@ constexpr array<double, MAX_FACT_N + 1> factorials = [] {
   return arr;
 }();
 
-State::State(const MultiDist &md, const std::vector<int> &v)
-    : val{0}, rem{0} {
-  for (int i = 0; i < v.size(); ++i) {
-    set_at(i, v[i]);
-  }
-}
-
-std::vector<int> State::to_vector() const {
-  std::vector<int> v;
-  auto x = val;
-  while(val) {
-    v.emplace_back(x%MASK);
-    x >>= MASK_BITS;
-  }
-  return v;
-}
-
-int State::operator[](int idx) const {
-  return (val >> (idx * MASK_BITS)) & MASK;
-}
-void State::set_at(int idx, int x) {
-  int diff = (x - this->operator[](idx));
-  val = (val & ~(MASK << (idx * MASK_BITS))) | (x << (idx * MASK_BITS));
-  rem += diff;
-}
-int State::remaining() const { return rem; }
-
 void MultiDist::multinomialDistribution(int n, const vector<double> &probs,
-                                        ProbDist &out, State current, int idx) {
+                                        ProbDist &out, BitArray current,
+                                        int idx) {
   if (idx == n_states - 1) {
-    int _x = n - (current.remaining() - current[n_states-1]);
+    int _x = n - (current.sum() - current[n_states - 1]);
     current.set_at(idx, _x);
 
     double p = 1.0;
@@ -62,7 +36,7 @@ void MultiDist::multinomialDistribution(int n, const vector<double> &probs,
     return;
   }
 
-  int remaining = n - current.remaining();
+  int remaining = n - current.sum();
   for (int i = 0; i <= remaining; ++i) {
     current.set_at(idx, i);
     multinomialDistribution(n, probs, out, current, idx + 1);
@@ -79,11 +53,12 @@ ProbDist MultiDist::convolve(const ProbDist &a, const ProbDist &b) {
   return result;
 }
 
-ProbDist MultiDist::fullTransitionDistribution(
-    const vector<int> &S, const vector<int> &A,
-    const vector<vector<double>> &p0, const vector<vector<double>> &p1) {
+ProbDist
+MultiDist::fullTransitionDistribution(const BitArray &S, const vector<int> &A,
+                                      const vector<vector<double>> &p0,
+                                      const vector<vector<double>> &p1) {
   ProbDist total;
-  State initial(*this);
+  BitArray initial;
   total[initial] = 1.0;
   for (int i = 0; i < n_states; ++i) {
     ProbDist dist1, dist0, combined;
