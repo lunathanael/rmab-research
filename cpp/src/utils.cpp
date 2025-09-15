@@ -23,9 +23,9 @@ void BitArray::set_at(int idx, int x) {
   val = (val & ~(MASK << (idx * MASK_BITS))) | (x << (idx * MASK_BITS));
 }
 int BitArray::sum() const {
-  int total = 0;
-  for (auto x = val; x; x >>= MASK_BITS) {
-    total += x & MASK;
+  int total{0};
+  for (int i = 0; i * MASK_BITS < sizeof(val) * 8; ++i) {
+    total += (val >> (i * MASK_BITS)) & MASK;
   }
   return total;
 }
