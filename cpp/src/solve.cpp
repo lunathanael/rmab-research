@@ -1,4 +1,5 @@
 #include "dp.h"
+#include "omp.h"
 #include "prob.h"
 #include "rmab.h"
 #include "utils.h"
@@ -8,17 +9,17 @@
 
 using namespace std;
 
-double calculate_reward(const vector<int> &state, const vector<int> &action,
+double calculate_reward(const BitArray &state, const vector<int> &action,
                         const vector<pair<double, double>> &rewards) {
   double reward = 0;
-  for (int i = 0; i < state.size(); ++i) {
+  for (int i = 0; i < action.size(); ++i) {
     reward += (state[i] - action[i]) * rewards[i].first +
               action[i] * rewards[i].second;
   }
   return reward;
 }
 
-double RMAB::solve(int n_arms) {
+DPValue RMAB::solve(int n_arms) {
   int n_alpha = n_arms * alpha;
   if (n_alpha / alpha != n_arms) {
     cerr << "Warning: Integer floor precision error detected in n_alpha "
@@ -37,36 +38,40 @@ double RMAB::solve(int n_arms) {
     cerr << "Warning: Initial state does not sum to number of arms\n";
   }
 
+  MultiDist md(n_arms, n_states);
   DPLayer prev(n_arms, n_states), curr(n_arms, n_states);
-  DPStateIterator sit(n_arms, n_states), sit2(n_arms, n_states);
-  for (int t = n_steps - 1; t >= 0; --t) {
-    sit.init();
-    do {
-      StateActionIterator ait(sit, n_alpha);
-      double mx_reward = numeric_limits<double>::lowest();
-      while (ait.next()) {
-        auto dist = fullTransitionDistribution(
-            sit.current(), ait.current(), transition_probabilities[t].first,
+  DPStates dps(n_arms, n_states);
+
+  auto eval_state = [&](const DPState & state, int t) {
+    StateActionIterator ait(state, n_states, n_alpha);
+    double mx_reward = numeric_limits<double>::lowest();
+    BitArray best_action;
+    while (ait.next()) {
+      double reward = 0;
+      if(t < n_steps - 1) {
+        auto dist = md.fullTransitionDistribution(
+          state, ait.current(), transition_probabilities[t].first,
             transition_probabilities[t].second);
-        double reward = 0;
-        sit2.init();
-        do {
-          reward += dist[sit2.current()] * prev[sit2];
-        } while (sit2.next());
-        reward += calculate_reward(sit.current(), ait.current(), rewards[t]);
-        mx_reward = max(mx_reward, reward);
+        for (int i = 0; i < dps.size(); ++i) {
+          const auto &nxt_state = dps[i];
+          reward += dist[nxt_state] * prev[nxt_state].expectation;
+        }
       }
-      curr[sit] = mx_reward;
-    } while (sit.next());
+      reward += calculate_reward(state, ait.current(), rewards[t]);
+      if(reward > mx_reward) {
+        mx_reward = reward;
+        best_action = BitArray(ait.current());
+      }
+    }
+    return DPValue(mx_reward, best_action);
+  };
+  for (int t = n_steps - 1; t > 0; --t) {
+#pragma omp parallel for schedule(dynamic)
+    for (int idx = 0; idx < dps.size(); ++idx) {
+      const auto &curr_state = dps[idx];
+      curr[curr_state] = eval_state(curr_state, t);
+    }
     swap(curr, prev);
   }
-
-  sit.init();
-  for (int i = 0; i < sit.size(); i = sit.next()) {
-    if (equal(sit.current().begin(), sit.current().end(),
-              initial_state.begin())) {
-      return prev[sit] / n_arms;
-    }
-  }
-  return -1;
+  return eval_state(DPState(BitArray(initial_state), n_arms, n_states), 0);
 }

@@ -1,12 +1,42 @@
 #include "dp.h"
+#include "prob.h"
 #include "utils.h"
 #include <algorithm>
 #include <numeric>
 
 using namespace std;
 
+DPState::DPState(const BitArray &x, int n_arms, int n_states) : BitArray(x) {
+  unsigned long long calculated_idx = 0;
+  int remaining_arms = n_arms;
+  for (int i = 0; i < n_states; ++i) {
+    int current_val = x[i];
+    for (int val = 0; val < current_val; ++val) {
+      int arms_for_remaining_states = remaining_arms - val;
+      int parts_remaining = n_states - i - 1;
+      calculated_idx += combinationsull(
+          arms_for_remaining_states + parts_remaining - 1, parts_remaining - 1);
+    }
+    remaining_arms -= current_val;
+  }
+  relative_idx = calculated_idx;
+}
+
+DPStates::DPStates(int n_arms, int n_states)
+    : n{combinationsull(n_arms + n_states - 1, n_states - 1)}, n_arms(n_arms),
+      n_states(n_states) {
+  dp_states.reserve(n);
+  DPStateIterator sit(n_arms, n_states);
+  sit.init();
+
+  for (int i = 0; i < n; ++i) {
+    dp_states.emplace_back(sit.current(), sit.idx);
+    sit.next();
+  }
+}
+
 DPStateIterator::DPStateIterator(int n_arms, int n_states)
-    : n{combinations(n_arms + n_states - 1, n_states - 1)}, n_arms(n_arms),
+    : n{combinationsull(n_arms + n_states - 1, n_states - 1)}, n_arms(n_arms),
       n_states(n_states) {
   init();
 }
@@ -35,8 +65,6 @@ bool DPStateIterator::next() {
   return true;
 }
 
-int DPStateIterator::size() const { return n; }
-
 long long StateActionIterator::max_right_capacity(int start_idx) const {
   long long capacity = 0;
   for (int k = start_idx; k < n_states; ++k) {
@@ -45,9 +73,10 @@ long long StateActionIterator::max_right_capacity(int start_idx) const {
   return capacity;
 }
 
-StateActionIterator::StateActionIterator(const DPStateIterator &it, int n_alpha)
-    : x(it.current()), n_states(it.current().size()), n_alpha(n_alpha),
-      done(false), started{false} {
+StateActionIterator::StateActionIterator(const BitArray &state, int n_states,
+                                         int n_alpha)
+    : x(state), n_states(n_states), n_alpha(n_alpha), done(false),
+      started{false} {
   y.assign(n_states, 0);
   sum_y = 0;
 }
@@ -127,8 +156,10 @@ DPLayer::DPLayer(int n_arms, int n_states)
   dp.assign(dim, 0);
 }
 
-double &DPLayer::operator[](const DPStateIterator &dpstate) {
-  return dp[dpstate.idx];
+DPValue &DPLayer::operator[](const DPState &dpstate) {
+  return dp[dpstate.relative_idx];
 }
+
+int DPLayer::size() const { return dim; }
 
 void swap(DPLayer &a, DPLayer &b) noexcept { a.dp.swap(b.dp); }
