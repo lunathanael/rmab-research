@@ -1,6 +1,7 @@
 import numpy as np
 import subprocess
 from py.lpsolver import randomization_numbers, solve_lp_standard, solve_lp_infinite_horizon
+import matplotlib.pyplot as plt
 
 N_STATES = 3
 T_HORIZON = 3
@@ -8,8 +9,9 @@ CPP_EXECUTABLE = "./build/RMAB"  # Path to your compiled C++ executable
 INIT_STATE = [0.3, 0.3, 0.4]
 N_VALUES_TO_TEST = [10, 20, 30, 40, 50]
 DISCOUNT_FACTOR_ALPHA = 0.5
+TRIALS = 5
 
-def generate_random_inputs(n, T):
+def generate_random_inputs(n, T, alpha):
     """Generates random valid inputs for the LP solver functions."""
     P0 = np.random.rand(n, n)
     P0 /= P0.sum(axis=1, keepdims=True)
@@ -22,10 +24,10 @@ def generate_random_inputs(n, T):
     
     init = np.array(INIT_STATE) * n
     
-    alpha_list = np.array([DISCOUNT_FACTOR_ALPHA] * T)
+    alpha_list = np.array([alpha] * T)
 
     if np.any(randomization_numbers(P0, P1, R0, R1, alpha_list, T, init) != np.ones(T)):
-        return generate_random_inputs(n, T)
+        return generate_random_inputs(n, T, alpha)
     
     return P0, P1, R0, R1, alpha_list, T, init
 
@@ -147,15 +149,63 @@ def run_cpp_and_evaluate_policy(P0, P1, R0, R1, alpha, T, n_states, n_value):
         accuracy = (match_count / total_cases) * 100
         print(f"Match Rate: {accuracy:.2f}%")
 
+def evaluate_policy_for_n(cpp_input_params, priority_indices, alpha, n_states, n_value):
+    """Runs C++ for a single N value and returns the accuracy of the priority policy."""
+    full_input = cpp_input_params + "\n" + str(n_value)
+    try:
+        process = subprocess.run([CPP_EXECUTABLE], input=full_input, text=True, capture_output=True, check=True)
+        optimal_results = parse_cpp_output(process.stdout)
+    except Exception as e:
+        print(f"Warning: C++ executable failed for N={n_value}. Error: {e}")
+        return None
+    if not optimal_results:
+        return None
+    match_count = 0
+    for result in optimal_results:
+        policy_action = get_priority_policy_actions(result['state'], priority_indices, alpha)
+        if policy_action == result['action']:
+            match_count += 1
+    return (match_count / len(optimal_results)) * 100
 
 def main():
-    """Main workflow orchestrator."""
-    print("--- Generating random problem instance ---")
-    P0, P1, R0, R1, _, T, _ = generate_random_inputs(N_STATES, T_HORIZON)
-    
-    # Run the evaluation for each N value specified
-    for n in N_VALUES_TO_TEST:
-        run_cpp_and_evaluate_policy(P0, P1, R0, R1, DISCOUNT_FACTOR_ALPHA, T, N_STATES, n)
+    """Main workflow orchestrator for running trials and plotting results."""
+    # Dictionary to store the sum of accuracies for each N value
+    # e.g., {10: [acc1, acc2, ...], 20: [acc1, acc2, ...]}
+    results = {n: [] for n in N_VALUES_TO_TEST}
+
+    for i in range(TRIALS):
+        print(f"\n--- Starting Trial {i + 1}/{TRIALS} ---")
+        # 1. Generate one random problem for this trial
+        P0, P1, R0, R1, alpha_list, T, init = generate_random_inputs(N_STATES, T_HORIZON, DISCOUNT_FACTOR_ALPHA)
+        
+        # 2. Calculate priority indices for this problem
+        priority_indices = solve_lp_infinite_horizon(P0, P1, R0, R1, DISCOUNT_FACTOR_ALPHA, N_STATES)
+        
+        # 3. Format the C++ input (it's the same for all N values in this trial)
+        init = np.ones(N_STATES) / N_STATES
+        cpp_input_params = format_cpp_input(T_HORIZON, N_STATES, DISCOUNT_FACTOR_ALPHA, init, P0, P1, R0, R1)
+        
+        # 4. Evaluate this problem for each N value
+        for n_value in N_VALUES_TO_TEST:
+            print(f"  Evaluating for N = {n_value}...")
+            accuracy = evaluate_policy_for_n(cpp_input_params, priority_indices, DISCOUNT_FACTOR_ALPHA, N_STATES, n_value)
+            if accuracy is not None:
+                results[n_value].append(accuracy)
+
+    # 5. Calculate average accuracies
+    avg_accuracies = [np.mean(results[n]) for n in N_VALUES_TO_TEST]
+
+    # 6. Plot the results
+    plt.figure(figsize=(10, 6))
+    plt.plot(N_VALUES_TO_TEST, avg_accuracies, marker='o', linestyle='-')
+    plt.title('Priority Policy Performance vs. Number of Arms')
+    plt.xlabel('Number of Arms (N)')
+    plt.ylabel('Average Policy Accuracy (%)')
+    plt.grid(True)
+    plt.ylim(0, 105) # Set y-axis from 0% to 105% for better visualization
+    plt.xticks(N_VALUES_TO_TEST)
+    plt.show()
+
 
 if __name__ == "__main__":
     main()
