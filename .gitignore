@@ -39,3 +39,5 @@ complexity_analysis.png
 
 build/
 .vscode/
+.cache/
+__pycache__/
