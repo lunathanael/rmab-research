@@ -79,3 +79,40 @@ def randomization_numbers(P0,P1,R0,R1,alpha_list,T,init):
                 randomization_count += 1
         randomization_nb[t] = randomization_count
     return randomization_nb
+
+
+def solve_lp_infinite_horizon(P0, P1, R0, R1, alpha, n_states):
+    """
+    Solves the infinite-horizon LP relaxation (Eq. 5 from the paper)
+    and returns the dual variables of the steady-state constraint, which
+    serve as the priority indices.
+    """
+    prob = LpProblem("InfiniteHorizonLP", LpMaximize)
+
+    # Primal variables: x_i and u_i
+    x = LpVariable.dicts("x", range(n_states), lowBound=0)
+    u = LpVariable.dicts("u", range(n_states), lowBound=0)
+
+    # Objective function (5a)
+    prob += lpSum([R0[i] * x[i] + (R1[i] - R0[i]) * u[i] for i in range(n_states)])
+
+    # Constraints (5b)
+    for i in range(n_states):
+        prob += u[i] <= x[i]
+    prob += lpSum(u.values()) <= alpha
+    prob += lpSum(x.values()) == 1 # x must be a probability distribution
+
+    # Steady-state constraint (5c)
+    # x_j = sum_i(x_i * P0_ij) + sum_i(u_i * (P1_ij - P0_ij))
+    steady_state_constraints = {}
+    for j in range(n_states):
+        constraint = lpSum(x[j]) == lpSum([x[i] * P0[i, j] + u[i] * (P1[i, j] - P0[i, j]) for i in range(n_states)])
+        prob += constraint
+        steady_state_constraints[j] = constraint
+        
+    prob.solve()
+
+    # Extract the dual variables (shadow prices) for the steady-state constraints
+    priority_indices = [steady_state_constraints[j].pi for j in range(n_states)]
+    
+    return priority_indices

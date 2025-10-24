@@ -76,9 +76,22 @@ DPValue RMAB::solve(int n_arms, bool skip_first, bool verbose) {
 
   auto init_state = DPState(BitArray(initial_state), n_arms, n_states);
 
-  curr[init_state] = eval_state(init_state, 0);
+  if(skip_first) {
+    curr[init_state] = eval_state(init_state, 0);
+  }
 
   if(verbose) {
+    if(skip_first) {
+      cout << 0 << ' ' << curr[init_state].expectation << '\n';
+      for(int i = 0; i < n_states; ++i) {
+        cout << init_state[i] << ' ';
+      }
+      cout << '\n';
+      for(int i = 0; i < n_states; ++i) {
+        cout << curr[init_state].best_action[i] << ' ';
+      }
+      cout << '\n';
+    }
     for(int t = skip_first; t < n_steps; ++t) {
       for(int idx = 0; idx < dps.size(); ++idx) {
         const auto &curr_state = dps[idx];

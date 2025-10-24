@@ -8,7 +8,7 @@ int main() {
   rmab.parse();
   int i;
   while(cin >> i) {
-    auto res = rmab.solve(i, false, true);
+    auto res = rmab.solve(i, true, true);
   }
   // rmab.print_args();
   // for (int i : {50}) {
