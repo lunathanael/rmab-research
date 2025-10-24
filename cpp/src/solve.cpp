@@ -19,7 +19,7 @@ double calculate_reward(const BitArray &state, const vector<int> &action,
   return reward;
 }
 
-DPValue RMAB::solve(int n_arms) {
+DPValue RMAB::solve(int n_arms, bool skip_first, bool verbose) {
   int n_alpha = n_arms * alpha;
   if (n_alpha / alpha != n_arms) {
     cerr << "Warning: Integer floor precision error detected in n_alpha "
@@ -65,7 +65,7 @@ DPValue RMAB::solve(int n_arms) {
     }
     return DPValue(mx_reward, best_action);
   };
-  for (int t = n_steps - 1; t > 0; --t) {
+  for (int t = n_steps - 1; t >= skip_first; --t) {
 #pragma omp parallel for schedule(dynamic)
     for (int idx = 0; idx < dps.size(); ++idx) {
       const auto &curr_state = dps[idx];
@@ -73,5 +73,27 @@ DPValue RMAB::solve(int n_arms) {
     }
     swap(curr, prev);
   }
-  return eval_state(DPState(BitArray(initial_state), n_arms, n_states), 0);
+
+  auto init_state = DPState(BitArray(initial_state), n_arms, n_states);
+
+  curr[init_state] = eval_state(init_state, 0);
+
+  if(verbose) {
+    for(int t = skip_first; t < n_steps; ++t) {
+      for(int idx = 0; idx < dps.size(); ++idx) {
+        const auto &curr_state = dps[idx];
+        cout << t << ' ' << curr[curr_state].expectation << '\n';
+        for(int i = 0; i < n_states; ++i) {
+          cout << curr_state[i] << ' ';
+        }
+        cout << '\n';
+        for(int i = 0; i < n_states; ++i) {
+          cout << curr[curr_state].best_action[i] << ' ';
+        }
+        cout << '\n';
+      }
+    }
+  }
+
+  return curr[init_state];
 }

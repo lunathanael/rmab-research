@@ -16,5 +16,5 @@ class RMAB {
 public:
   void parse();
   void print_args();
-  DPValue solve(int n_arms);
+  DPValue solve(int n_arms, bool skip_first=true, bool verbose=true);
 };
